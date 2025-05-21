@@ -3,27 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Pipeline Gates Calculator for visualizing and simulating pipeline execution times">
     <title>Pipeline Gates Calculator</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <style>
+        :root {
+            --card-border-color: #dddddd;
+            --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --primary-blue: #1565c0;
+            --light-blue: #e3f2fd;
+            --border-blue: #90caf9;
+            --table-border: #dee2e6;
+            --warning-orange: #e65100;
+            --light-orange: #fff3e0;
+            --border-orange: #ffb74d;
+        }
+
         .gate-card {
-            background: white;
-            border: 1px solid #ddd;
+            background-color: #ffffff;
+            border: 1px solid var(--card-border-color);
             border-radius: 8px;
             padding: 15px;
             margin: 10px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: var(--card-shadow);
             cursor: move;
+            transition: opacity 0.2s ease;
         }
+
         .gate-card.dragging {
             opacity: 0.5;
         }
+
         .summary-box {
-            background: #f8f9fa;
+            background-color: #f8f9fa;
             border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
         }
+
         .gates-container {
             min-height: 50px;
             padding: 10px 0;
@@ -33,26 +50,27 @@
             margin-top: 30px;
             overflow-x: auto;
             border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
 
         .simulation-table table {
             margin-bottom: 0;
+            width: 100%;
         }
 
         .simulation-table th {
             min-width: 100px;
-            background-color: #e3f2fd;
-            border-bottom: 2px solid #90caf9;
+            background-color: var(--light-blue);
+            border-bottom: 2px solid var(--border-blue);
             padding: 14px 15px;
             font-weight: 600;
-            color: #1565c0;
+            color: var(--primary-blue);
         }
 
         .simulation-table td {
             padding: 10px 15px;
             vertical-align: middle;
-            border-color: #eee;
+            border-color: #eeeeee;
         }
 
         .simulation-table tbody tr:hover {
@@ -62,13 +80,13 @@
         .simulation-table .total-column {
             font-weight: 600;
             background-color: #bbdefb;
-            border-left: 2px solid #90caf9;
+            border-left: 2px solid var(--border-blue);
         }
 
         .simulation-table td:first-child {
             background-color: #f8f9fa;
             font-weight: 500;
-            border-right: 2px solid #dee2e6;
+            border-right: 2px solid var(--table-border);
         }
 
         .simulation-table tbody tr:nth-child(even) {
@@ -76,7 +94,7 @@
         }
 
         .simulation-table td:not(:first-child) {
-            font-family: "Monaco", "Consolas", monospace;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             text-align: right;
         }
 
@@ -89,264 +107,626 @@
         }
 
         .average-row {
-            border-top: 2px solid #90caf9;
+            border-top: 2px solid var(--border-blue);
         }
 
         .average-row td {
-            background-color: #fff3e0 !important;
-            color: #e65100;
-            border-bottom: none !important;
+            background-color: var(--light-orange);
+            color: var(--warning-orange);
+            border-bottom: none;
             padding: 14px 15px;
         }
 
         .average-row .total-column {
-            background-color: #ffe0b2 !important;
-            border-left: 2px solid #ffb74d;
+            background-color: #ffe0b2;
+            border-left: 2px solid var(--border-orange);
         }
 
         .average-label {
             font-style: italic;
-            background-color: #fff3e0 !important;
-            border-right: 2px solid #ffb74d !important;
+            background-color: var(--light-orange);
+            border-right: 2px solid var(--border-orange);
+        }
+
+        .visually-hidden {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
+        }
+
+        @media print {
+            .btn {
+                display: none;
+            }
+            
+            .gate-card {
+                break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #000;
+            }
+            
+            .simulation-table {
+                break-inside: avoid;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container mt-4">
+    <main class="container mt-4">
         <h1>Pipeline Gates Calculator</h1>
         
-        <div class="summary-box">
-            <h3>Summary</h3>
-            <div>Overall Pass Rate: <span id="overall-pass-rate">100%</span></div>
-            <div>Total Duration: <span id="total-duration">0</span> minutes</div>
-            <div>Expected Extra Time (100 jobs): <span id="extra-time">0</span></div>
-            <div class="mt-2">
-                <small class="text-muted">Extra time represents additional time needed due to failures and retries</small>
+        <div class="summary-box" role="region" aria-labelledby="summary-title">
+            <h2 class="h3" id="summary-title">Summary</h2>
+            <dl class="row mb-0">
+                <div class="row mb-2">
+                    <dt class="col-sm-4">Overall Pass Rate:</dt>
+                    <dd class="col-sm-8"><span id="overall-pass-rate">100</span>%</dd>
+                </div>
+                <div class="row mb-2">
+                    <dt class="col-sm-4">Total Duration:</dt>
+                    <dd class="col-sm-8"><span id="total-duration">0</span> minutes</dd>
+                </div>
+                <div class="row mb-2">
+                    <dt class="col-sm-4">Expected Extra Time (100 jobs):</dt>
+                    <dd class="col-sm-8"><span id="extra-time">0</span></dd>
+                </div>
+                <div class="row mb-2">
+                    <dt class="col-sm-4">Simulated Average Extra Time:</dt>
+                    <dd class="col-sm-8"><span id="simulated-extra-time">Not simulated yet</span></dd>
+                </div>
+            </dl>
+            <div class="mt-3">
+                <small class="text-muted" id="extra-time-explanation">
+                    Extra time represents additional time needed due to failures and retries
+                </small>
             </div>
         </div>
 
-        <div class="gates-container" id="gates-container"></div>
+        <section aria-labelledby="gates-section-title">
+            <h2 class="h3 visually-hidden" id="gates-section-title">Pipeline Gates</h2>
+            <div class="gates-container" 
+                 id="gates-container" 
+                 role="list" 
+                 aria-label="Pipeline Gates"
+                 data-testid="gates-container">
+            </div>
+        </section>
 
-        <div class="card mb-4">
+        <section class="card mb-4" aria-labelledby="form-title">
             <div class="card-body">
-                <h5 class="card-title" id="form-title">Add New Gate</h5>
-                <div class="row g-3">
+                <h2 class="h5 card-title" id="form-title">Add New Gate</h2>
+                <form id="gate-form" class="row g-3" novalidate>
                     <div class="col-md-4">
-                        <input type="text" class="form-control" id="gate-name" placeholder="Gate Name">
+                        <label for="gate-name" class="form-label">Gate Name</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="gate-name" 
+                               name="gateName"
+                               placeholder="Enter gate name" 
+                               required 
+                               pattern="[A-Za-z0-9\s\-_]+" 
+                               maxlength="50"
+                               aria-describedby="gate-name-help">
+                        <div class="invalid-feedback">
+                            Please provide a valid gate name using letters, numbers, spaces, hyphens, or underscores.
+                        </div>
+                        <div class="form-text" id="gate-name-help">
+                            Use letters, numbers, spaces, hyphens, or underscores
+                        </div>
                     </div>
                     <div class="col-md-3">
-                        <input type="number" class="form-control" id="pass-rate" placeholder="Pass Rate %" min="0" max="100">
+                        <label for="pass-rate" class="form-label">Pass Rate (%)</label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="pass-rate" 
+                               name="passRate"
+                               placeholder="Enter pass rate" 
+                               required 
+                               min="0" 
+                               max="100" 
+                               step="0.1"
+                               aria-describedby="pass-rate-help">
+                        <div class="invalid-feedback">
+                            Please enter a number between 0 and 100.
+                        </div>
+                        <div class="form-text" id="pass-rate-help">
+                            Value between 0 and 100
+                        </div>
                     </div>
                     <div class="col-md-3">
-                        <input type="number" class="form-control" id="duration" placeholder="Duration (min)" min="0">
+                        <label for="duration" class="form-label">Duration (min)</label>
+                        <input type="number" 
+                               class="form-control" 
+                               id="duration" 
+                               name="duration"
+                               placeholder="Enter duration" 
+                               required 
+                               min="1" 
+                               step="1"
+                               aria-describedby="duration-help">
+                        <div class="invalid-feedback">
+                            Please enter a positive number for duration.
+                        </div>
+                        <div class="form-text" id="duration-help">
+                            Positive whole number
+                        </div>
                     </div>
                     <div class="col-md-2">
-                        <button class="btn btn-primary w-100" id="submit-btn" onclick="handleSubmit()">Add Gate</button>
-                        <button class="btn btn-secondary w-100 mt-2" id="cancel-btn" onclick="cancelEdit()" style="display: none;">Cancel</button>
+                        <label class="visually-hidden">Actions</label>
+                        <div class="d-grid gap-2">
+                            <button type="submit" 
+                                    class="btn btn-primary" 
+                                    id="submit-btn" 
+                                    aria-label="Add new gate">
+                                Add Gate
+                            </button>
+                            <button type="button" 
+                                    class="btn btn-secondary d-none" 
+                                    id="cancel-btn" 
+                                    onclick="cancelEdit()" 
+                                    aria-label="Cancel editing">
+                                Cancel
+                            </button>
+                        </div>
                     </div>
+                </form>
+            </div>
+        </section>
+
+        <section class="mt-4" aria-labelledby="simulation-title">
+            <h2 class="h3" id="simulation-title">Simulation Results</h2>
+            <p class="text-muted">Running 10 simulations with 100 jobs each</p>
+            
+            <div class="mb-3">
+                <button type="button" 
+                        class="btn btn-primary" 
+                        id="run-simulation-btn"
+                        onclick="runSimulations()" 
+                        aria-label="Run pipeline simulations">
+                    Run Simulations
+                </button>
+            </div>
+            
+            <div class="simulation-table">
+                <table class="table table-bordered" 
+                       role="grid" 
+                       aria-label="Simulation Results"
+                       id="simulation-table">
+                    <thead id="sim-table-head">
+                        <tr role="row">
+                            <th role="columnheader" scope="col">Run #</th>
+                            <th role="columnheader" scope="col" class="total-column">Total Hours</th>
+                        </tr>
+                    </thead>
+                    <tbody id="sim-table-body">
+                    </tbody>
+                </table>
+            </div>
+        </section>
+    </main>
+
+    <template id="gate-card-template">
+        <div class="gate-card" draggable="true" role="listitem">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <strong class="gate-name"></strong>
+                    <div class="gate-pass-rate"></div>
+                    <div class="gate-duration"></div>
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary btn-sm me-2 edit-btn">Edit</button>
+                    <button type="button" class="btn btn-danger btn-sm remove-btn">Remove</button>
                 </div>
             </div>
         </div>
-    </div>
-
-    <div class="container mt-4">
-        <h3>Simulation Results (10 runs, 100 jobs each)</h3>
-        <button class="btn btn-primary mb-3" onclick="runSimulations()">Run Simulations</button>
-        <div class="simulation-table">
-            <table class="table table-bordered">
-                <thead id="sim-table-head">
-                    <tr>
-                        <th>Run #</th>
-                        <th class="total-column">Total Hours</th>
-                    </tr>
-                </thead>
-                <tbody id="sim-table-body">
-                </tbody>
-            </table>
-        </div>
-    </div>
+    </template>
 
     <script>
-        let gates = [];
-        let editingIndex = -1;
+        // Constants
+        const CONSTANTS = {
+            SIMULATION: {
+                RUNS: 10,
+                JOBS_PER_RUN: 100,
+                DECIMAL_PLACES: 2
+            },
+            VALIDATION: {
+                MIN_PASS_RATE: 0,
+                MAX_PASS_RATE: 100,
+                MIN_DURATION: 1,
+                MAX_NAME_LENGTH: 50
+            },
+            CLASS_NAMES: {
+                DRAGGING: 'dragging',
+                EXTRA_HOURS_POSITIVE: 'extra-hours-positive',
+                EXTRA_HOURS_ZERO: 'extra-hours-zero',
+                D_NONE: 'd-none'
+            },
+            SELECTORS: {
+                GATE_CARD: '.gate-card',
+                DRAGGING: '.dragging'
+            }
+        };
 
-        function calculateExtraTime(gates, numberOfJobs) {
-            const idealTimePerJob = gates.reduce((sum, gate) => sum + gate.duration, 0);
-            const totalIdealTime = idealTimePerJob * numberOfJobs;
-            
-            function calculateExpectedTime() {
-                let expectedTime = 0;
-                for (let i = 0; i < gates.length; i++) {
-                    const gate = gates[i];
+        // State Management
+        const State = {
+            gates: [],
+            editingIndex: -1,
+            simulation: {
+                results: [],
+                isRunning: false
+            }
+        };
+
+        // Utility Functions
+        const Utils = {
+            safeParseNumber(value, defaultValue = 0) {
+                const parsed = parseFloat(value);
+                return isNaN(parsed) ? defaultValue : parsed;
+            },
+
+            formatNumber(value, decimals = CONSTANTS.SIMULATION.DECIMAL_PLACES) {
+                return Number(value).toFixed(decimals);
+            },
+
+            escapeHtml(unsafe) {
+                if (typeof unsafe !== 'string') return '';
+                return unsafe
+                    .replace(/&/g, "&amp;")
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/"/g, "&quot;")
+                    .replace(/'/g, "&#039;");
+            },
+
+            getElementById(id) {
+                return document.getElementById(id);
+            },
+
+            validateGate(gate) {
+                return (
+                    gate &&
+                    typeof gate.name === 'string' &&
+                    gate.name.length > 0 &&
+                    gate.name.length <= CONSTANTS.VALIDATION.MAX_NAME_LENGTH &&
+                    typeof gate.passRate === 'number' &&
+                    gate.passRate >= CONSTANTS.VALIDATION.MIN_PASS_RATE &&
+                    gate.passRate <= CONSTANTS.VALIDATION.MAX_PASS_RATE &&
+                    typeof gate.duration === 'number' &&
+                    gate.duration >= CONSTANTS.VALIDATION.MIN_DURATION
+                );
+            }
+        };
+
+        // Gate Management
+        const GateManager = {
+            createGate(name, passRate, duration) {
+                return {
+                    name: name.trim(),
+                    passRate: Utils.safeParseNumber(passRate),
+                    duration: Utils.safeParseNumber(duration)
+                };
+            },
+
+            renderGateCard(gate, index) {
+                const template = document.getElementById('gate-card-template');
+                const card = template.content.cloneNode(true).querySelector('.gate-card');
+                
+                card.dataset.index = index;
+                card.querySelector('.gate-name').textContent = Utils.escapeHtml(gate.name);
+                card.querySelector('.gate-pass-rate').textContent = `Pass Rate: ${gate.passRate}%`;
+                card.querySelector('.gate-duration').textContent = `Duration: ${gate.duration} minutes`;
+
+                card.querySelector('.edit-btn').onclick = () => this.startEdit(index);
+                card.querySelector('.remove-btn').onclick = () => this.removeGate(index);
+
+                card.addEventListener('dragstart', () => {
+                    card.classList.add(CONSTANTS.CLASS_NAMES.DRAGGING);
+                });
+
+                card.addEventListener('dragend', () => {
+                    card.classList.remove(CONSTANTS.CLASS_NAMES.DRAGGING);
+                });
+
+                return card;
+            },
+
+            renderAllGates() {
+                const container = document.getElementById('gates-container');
+                if (!container) return;
+
+                container.innerHTML = '';
+                State.gates.forEach((gate, index) => {
+                    container.appendChild(this.renderGateCard(gate, index));
+                });
+            },
+
+            startEdit(index) {
+                if (index < 0 || index >= State.gates.length) return;
+
+                State.editingIndex = index;
+                const gate = State.gates[index];
+                
+                const form = document.getElementById('gate-form');
+                if (form) {
+                    form.elements['gateName'].value = gate.name;
+                    form.elements['passRate'].value = gate.passRate;
+                    form.elements['duration'].value = gate.duration;
+                }
+
+                const formTitle = document.getElementById('form-title');
+                const submitBtn = document.getElementById('submit-btn');
+                const cancelBtn = document.getElementById('cancel-btn');
+
+                if (formTitle) formTitle.textContent = 'Edit Gate';
+                if (submitBtn) {
+                    submitBtn.textContent = 'Save Changes';
+                    submitBtn.setAttribute('aria-label', 'Save gate changes');
+                }
+                if (cancelBtn) cancelBtn.classList.remove(CONSTANTS.CLASS_NAMES.D_NONE);
+            },
+
+            removeGate(index) {
+                if (index < 0 || index >= State.gates.length) return;
+                
+                State.gates.splice(index, 1);
+                this.renderAllGates();
+                UIManager.updateCalculations();
+                SimulationManager.runSimulations();
+            }
+        };
+
+        // Simulation Management
+        const SimulationManager = {
+            calculateExtraTime(gates, numberOfJobs) {
+                if (!Array.isArray(gates) || !gates.length || typeof numberOfJobs !== 'number') {
+                    return 0;
+                }
+
+                const idealTimePerJob = gates.reduce((sum, gate) => sum + gate.duration, 0);
+                const totalIdealTime = idealTimePerJob * numberOfJobs;
+                
+                const expectedTimePerJob = gates.reduce((expectedTime, gate) => {
                     const passRate = gate.passRate / 100;
                     const expectedAttemptsAtThisGate = 1 / passRate;
-                    expectedTime += gate.duration * expectedAttemptsAtThisGate;
+                    return expectedTime + (gate.duration * expectedAttemptsAtThisGate);
+                }, 0);
+                
+                const totalExpectedTime = expectedTimePerJob * numberOfJobs;
+                return totalExpectedTime - totalIdealTime;
+            },
+
+            runSingleSimulation(gates, numberOfJobs) {
+                const results = {
+                    totalTime: 0,
+                    gateResults: gates.map(() => ({ attempts: 0, failures: 0 }))
+                };
+
+                for (let job = 0; job < numberOfJobs; job++) {
+                    gates.forEach((gate, index) => {
+                        let attempts = 1;
+                        while (Math.random() * 100 > gate.passRate) {
+                            attempts++;
+                        }
+                        results.totalTime += gate.duration * attempts;
+                        results.gateResults[index].attempts += attempts;
+                        results.gateResults[index].failures += attempts - 1;
+                    });
                 }
-                return expectedTime;
+
+                return results;
+            },
+
+            runSimulations() {
+                if (State.simulation.isRunning || !State.gates.length) return;
+                
+                State.simulation.isRunning = true;
+                const results = [];
+                const idealTime = State.gates.reduce((sum, gate) => 
+                    sum + gate.duration * CONSTANTS.SIMULATION.JOBS_PER_RUN, 0) / 60;
+
+                try {
+                    for (let i = 0; i < CONSTANTS.SIMULATION.RUNS; i++) {
+                        const simResult = this.runSingleSimulation(
+                            State.gates, 
+                            CONSTANTS.SIMULATION.JOBS_PER_RUN
+                        );
+                        
+                        results.push({
+                            run: i + 1,
+                            totalHours: simResult.totalTime / 60,
+                            extraHours: (simResult.totalTime / 60) - idealTime,
+                            gateResults: simResult.gateResults
+                        });
+                    }
+
+                    const averageExtraHours = results.reduce((sum, r) => 
+                        sum + r.extraHours, 0) / results.length;
+
+                    UIManager.renderSimulationResults(results, averageExtraHours);
+                } finally {
+                    State.simulation.isRunning = false;
+                }
             }
-            
-            const expectedTimePerJob = calculateExpectedTime();
-            const totalExpectedTime = expectedTimePerJob * numberOfJobs;
-            
-            return totalExpectedTime - totalIdealTime;
-        }
+        };
 
-        function handleSubmit() {
-            const name = document.getElementById('gate-name').value;
-            const passRate = document.getElementById('pass-rate').value;
-            const duration = document.getElementById('duration').value;
+        // UI Management
+        const UIManager = {
+            updateCalculations() {
+                const overallPassRate = State.gates.reduce(
+                    (acc, gate) => acc * (gate.passRate / 100), 1
+                ) * 100;
+                
+                const totalDuration = State.gates.reduce(
+                    (acc, gate) => acc + gate.duration, 0
+                );
+                
+                const extraTime = State.gates.length > 0 ? 
+                    SimulationManager.calculateExtraTime(
+                        State.gates, 
+                        CONSTANTS.SIMULATION.JOBS_PER_RUN
+                    ) : 0;
 
-            if (!name || !passRate || !duration) {
-                alert('Please fill in all fields');
+                const elements = {
+                    passRate: document.getElementById('overall-pass-rate'),
+                    duration: document.getElementById('total-duration'),
+                    extraTime: document.getElementById('extra-time')
+                };
+
+                if (elements.passRate) {
+                    elements.passRate.textContent = Utils.formatNumber(overallPassRate);
+                }
+                if (elements.duration) {
+                    elements.duration.textContent = totalDuration.toString();
+                }
+                if (elements.extraTime) {
+                    elements.extraTime.textContent = 
+                        `${Utils.formatNumber(extraTime)} minutes ` +
+                        `(${Utils.formatNumber(extraTime/60)} hours)`;
+                }
+            },
+
+            renderSimulationResults(results, averageExtraHours) {
+                const tableBody = document.getElementById('sim-table-body');
+                const tableHead = document.getElementById('sim-table-head')?.querySelector('tr');
+                
+                if (!tableBody || !tableHead) return;
+
+                // Update headers
+                let headerHtml = `
+                    <th role="columnheader" scope="col">Run #</th>
+                    ${State.gates.map(gate => `
+                        <th role="columnheader" scope="col">${Utils.escapeHtml(gate.name)}</th>
+                    `).join('')}
+                    <th role="columnheader" scope="col" class="total-column">Total Hours</th>
+                `;
+                tableHead.innerHTML = headerHtml;
+
+                // Update body
+                tableBody.innerHTML = results.map(result => `
+                    <tr>
+                        <td>${result.run}</td>
+                        ${result.gateResults.map(gr => `
+                            <td>${Utils.formatNumber(gr.attempts / CONSTANTS.SIMULATION.JOBS_PER_RUN)}</td>
+                        `).join('')}
+                        <td class="total-column">
+                            ${Utils.formatNumber(result.totalHours)}
+                        </td>
+                    </tr>
+                `).join('') + `
+                    <tr class="average-row">
+                        <td class="average-label">Average</td>
+                        ${State.gates.map((_, i) => `
+                            <td>${Utils.formatNumber(
+                                results.reduce((sum, r) => 
+                                    sum + r.gateResults[i].attempts, 0) / 
+                                    (CONSTANTS.SIMULATION.RUNS * CONSTANTS.SIMULATION.JOBS_PER_RUN)
+                            )}</td>
+                        `).join('')}
+                        <td class="total-column">
+                            ${Utils.formatNumber(
+                                results.reduce((sum, r) => 
+                                    sum + r.totalHours, 0) / CONSTANTS.SIMULATION.RUNS
+                            )}
+                        </td>
+                    </tr>
+                `;
+
+                // Update extra time display
+                const extraTimeElement = document.getElementById('simulated-extra-time');
+                if (extraTimeElement) {
+                    extraTimeElement.textContent = `${Utils.formatNumber(averageExtraHours)} hours`;
+                    extraTimeElement.className = averageExtraHours > 0 ? 
+                        CONSTANTS.CLASS_NAMES.EXTRA_HOURS_POSITIVE : 
+                        CONSTANTS.CLASS_NAMES.EXTRA_HOURS_ZERO;
+                }
+            }
+        };
+
+        // Event Handlers
+        function handleSubmit(event) {
+            event?.preventDefault();
+
+            const form = event?.target;
+            if (!form) return;
+
+            const formData = new FormData(form);
+            const gate = GateManager.createGate(
+                formData.get('gateName'),
+                formData.get('passRate'),
+                formData.get('duration')
+            );
+
+            if (!Utils.validateGate(gate)) {
+                const nameInput = document.getElementById('gate-name');
+                if (nameInput) nameInput.classList.add('is-invalid');
                 return;
             }
 
-            const gate = {
-                name,
-                passRate: parseFloat(passRate),
-                duration: parseInt(duration)
-            };
+            if (State.editingIndex >= 0) {
+                State.gates[State.editingIndex] = gate;
+                State.editingIndex = -1;
+                
+                const formTitle = document.getElementById('form-title');
+                const submitBtn = document.getElementById('submit-btn');
+                const cancelBtn = document.getElementById('cancel-btn');
 
-            if (editingIndex >= 0) {
-                gates[editingIndex] = gate;
-                editingIndex = -1;
-                document.getElementById('form-title').textContent = 'Add New Gate';
-                document.getElementById('submit-btn').textContent = 'Add Gate';
-                document.getElementById('cancel-btn').style.display = 'none';
+                if (formTitle) formTitle.textContent = 'Add New Gate';
+                if (submitBtn) {
+                    submitBtn.textContent = 'Add Gate';
+                    submitBtn.setAttribute('aria-label', 'Add new gate');
+                }
+                if (cancelBtn) cancelBtn.classList.add(CONSTANTS.CLASS_NAMES.D_NONE);
             } else {
-                gates.push(gate);
+                State.gates.push(gate);
             }
 
-            renderGates();
-            updateCalculations();
-            clearForm();
-            
-            if (gates.length > 0) {
-                runSimulations();
-            }
-        }
+            form.reset();
+            Array.from(form.elements).forEach(element => {
+                element.classList.remove('is-invalid');
+            });
 
-        function startEdit(index) {
-            editingIndex = index;
-            const gate = gates[index];
-            
-            document.getElementById('gate-name').value = gate.name;
-            document.getElementById('pass-rate').value = gate.passRate;
-            document.getElementById('duration').value = gate.duration;
-            
-            document.getElementById('form-title').textContent = 'Edit Gate';
-            document.getElementById('submit-btn').textContent = 'Save Changes';
-            document.getElementById('cancel-btn').style.display = 'block';
+            GateManager.renderAllGates();
+            UIManager.updateCalculations();
+            SimulationManager.runSimulations();
         }
 
         function cancelEdit() {
-            editingIndex = -1;
-            clearForm();
-            document.getElementById('form-title').textContent = 'Add New Gate';
-            document.getElementById('submit-btn').textContent = 'Add Gate';
-            document.getElementById('cancel-btn').style.display = 'none';
-        }
-
-        function clearForm() {
-            document.getElementById('gate-name').value = '';
-            document.getElementById('pass-rate').value = '';
-            document.getElementById('duration').value = '';
-        }
-
-        function removeGate(index) {
-            gates.splice(index, 1);
-            renderGates();
-            updateCalculations();
-            if (gates.length > 0) {
-                runSimulations();
-            }
-        }
-
-        function renderGates() {
-            const container = document.getElementById('gates-container');
-            container.innerHTML = '';
-
-            gates.forEach((gate, index) => {
-                const gateElement = document.createElement('div');
-                gateElement.className = 'gate-card';
-                gateElement.draggable = true;
-                gateElement.innerHTML = `
-                    <div class="d-flex justify-content-between align-items-center">
-                        <div>
-                            <strong>${gate.name}</strong>
-                            <div>Pass Rate: ${gate.passRate}%</div>
-                            <div>Duration: ${gate.duration} min</div>
-                        </div>
-                        <div>
-                            <button class="btn btn-primary btn-sm me-2" onclick="startEdit(${index})">Edit</button>
-                            <button class="btn btn-danger btn-sm" onclick="removeGate(${index})">Remove</button>
-                        </div>
-                    </div>
-                `;
-
-                gateElement.addEventListener('dragstart', (e) => {
-                    e.target.classList.add('dragging');
-                    e.dataTransfer.setData('text/plain', index);
-                });
-
-                gateElement.addEventListener('dragend', (e) => {
-                    e.target.classList.remove('dragging');
-                });
-
-                container.appendChild(gateElement);
-            });
-        }
-
-        function updateCalculations() {
-            const overallPassRate = gates.reduce((acc, gate) => acc * (gate.passRate / 100), 1) * 100;
-            const totalDuration = gates.reduce((acc, gate) => acc + gate.duration, 0);
+            State.editingIndex = -1;
             
-            const numberOfJobs = 100;
-            const extraTime = gates.length > 0 ? calculateExtraTime(gates, numberOfJobs) : 0;
-            
-            document.getElementById('overall-pass-rate').textContent = `${overallPassRate.toFixed(2)}%`;
-            document.getElementById('total-duration').textContent = totalDuration;
-            document.getElementById('extra-time').textContent = 
-                `${extraTime.toFixed(2)} minutes (${(extraTime/60).toFixed(2)} hours)`;
+            const form = document.getElementById('gate-form');
+            const formTitle = document.getElementById('form-title');
+            const submitBtn = document.getElementById('submit-btn');
+            const cancelBtn = document.getElementById('cancel-btn');
+
+            if (form) form.reset();
+            if (formTitle) formTitle.textContent = 'Add New Gate';
+            if (submitBtn) {
+                submitBtn.textContent = 'Add Gate';
+                submitBtn.setAttribute('aria-label', 'Add new gate');
+            }
+            if (cancelBtn) cancelBtn.classList.add(CONSTANTS.CLASS_NAMES.D_NONE);
         }
 
-        const container = document.getElementById('gates-container');
+        function runSimulations() {
+            SimulationManager.runSimulations();
+        }
 
-        container.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            const draggingElement = document.querySelector('.dragging');
-            const afterElement = getDragAfterElement(container, e.clientY);
-            
-            if (afterElement == null) {
-                container.appendChild(draggingElement);
-            } else {
-                container.insertBefore(draggingElement, afterElement);
-            }
-        });
-
-        container.addEventListener('drop', (e) => {
-            e.preventDefault();
-            const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
-            const cards = [...container.querySelectorAll('.gate-card')];
-            const targetIndex = cards.indexOf(document.querySelector('.dragging'));
-
-            const [movedGate] = gates.splice(sourceIndex, 1);
-            gates.splice(targetIndex, 0, movedGate);
-
-            renderGates();
-            updateCalculations();
-            if (gates.length > 0) {
-                runSimulations();
-            }
-        });
-
+        // Drag and Drop Utilities
         function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll('.gate-card:not(.dragging)')];
+            const draggableElements = [...container.querySelectorAll(
+                `${CONSTANTS.SELECTORS.GATE_CARD}:not(${CONSTANTS.SELECTORS.DRAGGING})`
+            )];
 
             return draggableElements.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
-
+                
                 if (offset < 0 && offset > closest.offset) {
                     return { offset: offset, element: child };
                 } else {
@@ -355,96 +735,54 @@
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
 
-        function runSimulations() {
-            const NUM_RUNS = 10;
-            const NUM_JOBS = 100;
-            
-            const idealMinutes = gates.reduce((sum, gate) => sum + gate.duration, 0) * NUM_JOBS;
-            const idealHours = idealMinutes / 60;
-            
-            const tableBody = document.getElementById('sim-table-body');
-            tableBody.innerHTML = '';
-            
-            const tableHead = document.getElementById('sim-table-head').querySelector('tr');
-            
-            tableHead.innerHTML = '<th>Run #</th>';
-            gates.forEach(gate => {
-                tableHead.innerHTML += `<th>${gate.name} (hrs)</th>`;
-            });
-            tableHead.innerHTML += `
-                <th class="total-column">Total (hrs)</th>
-                <th class="total-column">Extra (hrs)</th>
-            `;
-            
-            const gateValues = Array(gates.length).fill().map(() => []);
-            const totalHoursValues = [];
-            const extraHoursValues = [];
-            
-            for (let run = 0; run < NUM_RUNS; run++) {
-                const row = document.createElement('tr');
-                row.innerHTML = `<td>${run + 1}</td>`;
-                
-                let totalMinutes = 0;
-                
-                gates.forEach((gate, gateIndex) => {
-                    let gateTime = 0;
-                    
-                    for (let job = 0; job < NUM_JOBS; job++) {
-                        let attempts = 1;
-                        while (Math.random() * 100 > gate.passRate) {
-                            attempts++;
-                        }
-                        gateTime += gate.duration * attempts;
-                    }
-                    
-                    totalMinutes += gateTime;
-                    const gateHours = gateTime / 60;
-                    gateValues[gateIndex].push(gateHours);
-                    row.innerHTML += `<td>${gateHours.toFixed(2)}</td>`;
-                });
-                
-                const totalHours = totalMinutes / 60;
-                const extraHours = totalHours - idealHours;
-                const extraHoursFormatted = extraHours.toFixed(2);
-                
-                let extraHoursClass = 'extra-hours-positive';
-                if (extraHours <= 0) {
-                    extraHoursClass = 'extra-hours-zero';
-                }
-                
-                row.innerHTML += `
-                    <td class="total-column">${totalHours.toFixed(2)}</td>
-                    <td class="total-column ${extraHoursClass}">${extraHoursFormatted}</td>
-                `;
-                
-                totalHoursValues.push(totalHours);
-                extraHoursValues.push(extraHours);
-                tableBody.appendChild(row);
+        // Initialize Application
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('gate-form');
+            if (form) {
+                form.addEventListener('submit', handleSubmit);
             }
-            
-            const gateAverages = gateValues.map(gateValues => {
-                const sum = gateValues.reduce((acc, value) => acc + value, 0);
-                return sum / NUM_RUNS;
-            });
-            
-            const totalHoursAverage = totalHoursValues.reduce((acc, value) => acc + value, 0) / NUM_RUNS;
-            const extraHoursAverage = extraHoursValues.reduce((acc, value) => acc + value, 0) / NUM_RUNS;
-            
-            const averageRow = document.createElement('tr');
-            averageRow.classList.add('average-row');
-            averageRow.innerHTML = `<td><span class="average-label">Average</span></td>`;
-            
-            gateAverages.forEach(average => {
-                averageRow.innerHTML += `<td>${average.toFixed(2)}</td>`;
-            });
-            
-            averageRow.innerHTML += `
-                <td class="total-column">${totalHoursAverage.toFixed(2)}</td>
-                <td class="total-column">${extraHoursAverage.toFixed(2)}</td>
-            `;
-            
-            tableBody.appendChild(averageRow);
-        }
+
+            // Set up drag and drop
+            const container = document.getElementById('gates-container');
+            if (container) {
+                container.addEventListener('dragover', (e) => {
+                    e.preventDefault();
+                    const afterElement = getDragAfterElement(container, e.clientY);
+                    const draggable = document.querySelector(CONSTANTS.SELECTORS.DRAGGING);
+                    
+                    if (draggable) {
+                        if (afterElement) {
+                            container.insertBefore(draggable, afterElement);
+                        } else {
+                            container.appendChild(draggable);
+                        }
+                    }
+                });
+
+                container.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    const draggable = document.querySelector(CONSTANTS.SELECTORS.DRAGGING);
+                    if (draggable) {
+                        draggable.classList.remove(CONSTANTS.CLASS_NAMES.DRAGGING);
+                        
+                        // Update gates array to match new order
+                        const newGates = [];
+                        container.querySelectorAll(CONSTANTS.SELECTORS.GATE_CARD).forEach(card => {
+                            const index = parseInt(card.dataset.index);
+                            if (!isNaN(index) && State.gates[index]) {
+                                newGates.push(State.gates[index]);
+                            }
+                        });
+                        State.gates = newGates;
+                        
+                        // Refresh UI
+                        GateManager.renderAllGates();
+                        UIManager.updateCalculations();
+                        SimulationManager.runSimulations();
+                    }
+                });
+            }
+        });
     </script>
 </body>
 </html>

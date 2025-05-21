@@ -1,0 +1,103 @@
+# Project Rules and Standards
+version: '1.0'
+
+code_organization:
+  structure:
+    - All HTML, CSS, and JavaScript must be in separate files
+    - Use semantic HTML5 elements appropriately
+    - Follow component-based architecture
+    - Maintain single responsibility principle
+
+html_standards:
+  required_elements:
+    - DOCTYPE declaration
+    - meta viewport tag
+    - charset specification
+  accessibility:
+    - Use ARIA labels where appropriate
+    - Maintain proper heading hierarchy
+    - Include alt text for images
+    - Ensure keyboard navigation support
+    - Use semantic HTML elements for their intended purpose
+  validation:
+    - All HTML must be valid according to W3C standards
+    - No inline JavaScript
+    - No inline styles
+
+javascript_standards:
+  code_style:
+    - Use consistent naming conventions (camelCase for variables and functions)
+    - Group related functions into logical modules
+    - Use constants for configuration values
+    - Implement proper error handling
+  validation:
+    - Implement client-side form validation
+    - Provide clear feedback for validation errors
+    - Validate all user inputs before processing
+  state_management:
+    - Maintain centralized state
+    - Use proper state update patterns
+    - Avoid global variables
+
+security_practices:
+  input_handling:
+    - Sanitize all user inputs
+    - Escape HTML content when rendering dynamic data
+    - Validate input length and format
+  xss_prevention:
+    - Use content security policy headers
+    - Implement proper HTML escaping
+    - Avoid eval() and similar dangerous functions
+  data_protection:
+    - Don't expose sensitive information in client-side code
+    - Use secure storage methods for sensitive data
+    - Implement proper access controls
+
+documentation:
+  requirements:
+    - Document all functions with JSDoc style comments
+    - Include parameter descriptions
+    - Document return values
+    - Provide usage examples for complex functions
+  code_comments:
+    - Use meaningful comments for complex logic
+    - Explain non-obvious technical decisions
+    - Keep comments up to date with code changes
+
+development_workflow:
+  version_control:
+    - Use descriptive commit messages
+    - Keep commits focused and atomic
+    - Follow Git best practices
+  code_quality:
+    - No unused variables or functions
+    - No commented-out code in production
+    - Remove console.log statements before deployment
+
+dependencies:
+  package_management:
+    - Use npm for package management
+    - Keep dependencies up to date
+    - Document any specific version requirements
+    - Avoid installing unnecessary dependencies
+
+testing:
+  requirements:
+    - Test user input validation
+    - Test form submission handling
+    - Test state management
+    - Test accessibility features
+
+error_handling:
+  requirements:
+    - Provide user-friendly error messages
+    - Log errors appropriately
+    - Implement graceful fallbacks
+    - Handle edge cases appropriately
+
+maintenance:
+  requirements:
+    - Keep documentation up to date
+    - Regular security updates
+    - Review and update dependencies
+    - Remove deprecated code

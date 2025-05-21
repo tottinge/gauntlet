@@ -1,0 +1,50 @@
+Create a single HTML file for a Pipeline Gates Calculator web application that helps visualize and simulate pipeline execution times. The application should have the following features:
+
+1. Core Features:
+- Add, edit, and remove pipeline gates with name, pass rate (%), and duration (minutes)
+- Drag-and-drop functionality to reorder gates
+- Real-time calculations of overall pass rate and total duration
+- Simulation capability running 10 simulations with 100 jobs each
+
+2. UI Components:
+- Summary section showing:
+  * Overall pass rate
+  * Total duration
+  * Expected extra time for 100 jobs
+  * Simulated average extra time
+- Form section for adding/editing gates with fields:
+  * Gate name (text, allows letters, numbers, spaces, hyphens, underscores)
+  * Pass rate (number, 0-100%)
+  * Duration (positive integer in minutes)
+- Display area for existing gates as draggable cards
+- Simulation results table showing:
+  * Individual run results
+  * Attempts per gate
+  * Total hours
+  * Averages row
+
+3. Technical Requirements:
+- Use Bootstrap 5.3.2 for styling
+- Include proper accessibility features (ARIA labels, semantic HTML)
+- Implement form validation
+- Sanitize user inputs and escape HTML content
+- Use CSS variables for consistent styling
+- Include print styles
+- Maintain centralized state management
+- Include drag-and-drop functionality
+- Support keyboard navigation
+
+4. Styling:
+- Use a clean, professional design with cards and tables
+- Include visual feedback for drag-and-drop operations
+- Style simulation results with monospace font for numbers
+- Use color coding for positive/negative extra time values
+- Make the interface responsive
+
+5. Calculations:
+- Calculate overall pass rate as product of individual gate pass rates
+- Calculate expected extra time based on pass rates and durations
+- Run Monte Carlo simulations for actual time estimates
+- Show averages of simulation results
+
+The application should be contained in a single HTML file with embedded CSS and JavaScript, while maintaining clean code organization and following best practices for accessibility and security.
