@@ -117,6 +117,59 @@
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 </style>
+
+<!-- Add these additional styles -->
+<style>
+    /* [Previous styles remain the same] */
+
+    /* Enhanced header styling */
+    .simulation-table thead th {
+        background-color: #e3f2fd; /* Light blue background */
+        color: #1565c0;
+        font-weight: 600;
+        padding: 14px 15px;
+        border-bottom: 2px solid #90caf9;
+    }
+
+    .simulation-table thead th.total-column {
+        background-color: #bbdefb; /* Slightly darker blue for total columns */
+        border-left: 2px solid #90caf9;
+    }
+
+    /* Average row (footer) styling */
+    .average-row {
+        border-top: 2px solid #90caf9;
+        font-weight: 600;
+        background-color: #fafafa !important;
+    }
+
+    .average-row td {
+        background-color: #fff3e0 !important; /* Light orange background */
+        color: #e65100;
+        border-bottom: none !important;
+        padding: 14px 15px;
+    }
+
+    .average-row .total-column {
+        background-color: #ffe0b2 !important; /* Slightly darker orange for total columns */
+        border-left: 2px solid #ffb74d;
+    }
+
+    .average-label {
+        font-style: italic;
+        background-color: #fff3e0 !important;
+        border-right: 2px solid #ffb74d !important;
+    }
+
+    /* Refine existing styles */
+    .simulation-table td:not(:first-child) {
+        font-family: "Monaco", "Consolas", monospace;
+        text-align: right;
+    }
+
+    .extra-hours-positive {
+        color: #d32f2f; /* Darker red for better
+</style>
 </head>
 <body>
     <div class="container mt-4">
@@ -404,7 +457,6 @@
             return results;
         }
 
-    // Modify the runSimulations function to include the new styling
     function runSimulations() {
         const NUM_RUNS = 10;
         const NUM_JOBS = 100;
@@ -413,19 +465,20 @@
         const tableHead = document.getElementById('sim-table-head').querySelector('tr');
         const tableBody = document.getElementById('sim-table-body');
         
-        // Reset table headers
+        // Reset table headers - remove "Hours" where (hrs) is used
         tableHead.innerHTML = '<th>Run #</th>';
         gates.forEach(gate => {
-            tableHead.innerHTML += `<th>${gate.name}</th>`;
+            tableHead.innerHTML += `<th>${gate.name} (hrs)</th>`;
         });
-        tableHead.innerHTML += '<th class="total-column">Total Hours</th><th class="total-column">Extra Hours</th>';
+        tableHead.innerHTML += `
+            <th class="total-column">Total (hrs)</th>
+            <th class="total-column">Extra (hrs)</th>
+        `;
         
-        // Clear table body
-        tableBody.innerHTML = '';
-        
-        // Calculate ideal time (no failures)
-        const idealMinutes = gates.reduce((sum, gate) => sum + gate.duration, 0) * NUM_JOBS;
-        const idealHours = idealMinutes / 60;
+        // Arrays to store column values for averaging
+        const gateValues = Array(gates.length).fill().map(() => []);
+        const totalHoursValues = [];
+        const extraHoursValues = [];
         
         // Run simulations
         for (let run = 0; run < NUM_RUNS; run++) {
@@ -435,7 +488,7 @@
             let totalMinutes = 0;
             
             // Simulate each gate for all jobs
-            gates.forEach(gate => {
+            gates.forEach((gate, gateIndex) => {
                 let gateTime = 0;
                 
                 // Process all jobs through this gate
@@ -448,7 +501,9 @@
                 }
                 
                 totalMinutes += gateTime;
-                row.innerHTML += `<td>${(gateTime / 60).toFixed(2)}</td>`;
+                const gateHours = gateTime / 60;
+                gateValues[gateIndex].push(gateHours);
+                row.innerHTML += `<td>${gateHours.toFixed(2)}</td>`;
             });
             
             const totalHours = totalMinutes / 60;
@@ -467,8 +522,35 @@
                 <td class="total-column ${extraHoursClass}">${extraHoursFormatted}</td>
             `;
             
+            totalHoursValues.push(totalHours);
+            extraHoursValues.push(extraHours);
             tableBody.appendChild(row);
         }
+        
+        // Calculate Averages
+        const gateAverages = gateValues.map(gateValues => {
+            const sum = gateValues.reduce((acc, value) => acc + value, 0);
+            return sum / NUM_RUNS;
+        });
+        
+        const totalHoursAverage = totalHoursValues.reduce((acc, value) => acc + value, 0) / NUM_RUNS;
+        const extraHoursAverage = extraHoursValues.reduce((acc, value) => acc + value, 0) / NUM_RUNS;
+        
+        // Create Average Row
+        const averageRow = document.createElement('tr');
+        averageRow.classList.add('average-row');
+        averageRow.innerHTML = `<td><span class="average-label">Average</span></td>`;
+        
+        gateAverages.forEach(average => {
+            averageRow.innerHTML += `<td>${average.toFixed(2)}</td>`;
+        });
+        
+        averageRow.innerHTML += `
+            <td class="total-column">${totalHoursAverage.toFixed(2)}</td>
+            <td class="total-column">${extraHoursAverage.toFixed(2)}</td>
+        `;
+        
+        tableBody.appendChild(averageRow);
     }
 
     // Modify handleSubmit to run simulations after adding/editing a gate
