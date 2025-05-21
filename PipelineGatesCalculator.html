@@ -330,59 +330,73 @@
         }
 
         function runSimulations() {
-            if (gates.length === 0) {
-                alert('Please add some gates first');
-                return;
-            }
-
-            // Update table header
-            const thead = document.getElementById('sim-table-head').getElementsByTagName('tr')[0];
-            thead.innerHTML = '<th>Run #</th>';
-            gates.forEach(gate => {
-                thead.innerHTML += `<th>${gate.name}</th>`;
-            });
-            thead.innerHTML += '<th class="total-column">Total Hours</th>';
-
-            // Run 10 simulations
-            const tbody = document.getElementById('sim-table-body');
-            tbody.innerHTML = '';
+        const NUM_RUNS = 10;
+        const NUM_JOBS = 100;
+        
+        // Clear previous results
+        const tableHead = document.getElementById('sim-table-head').querySelector('tr');
+        const tableBody = document.getElementById('sim-table-body');
+        
+        // Reset table headers
+        tableHead.innerHTML = '<th>Run #</th>';
+        gates.forEach(gate => {
+            tableHead.innerHTML += `<th>${gate.name}</th>`;
+        });
+        tableHead.innerHTML += '<th class="total-column">Total Hours</th>';
+        
+        // Clear table body
+        tableBody.innerHTML = '';
+        
+        // Run simulations
+        for (let run = 0; run < NUM_RUNS; run++) {
+            const row = document.createElement('tr');
+            row.innerHTML = `<td>${run + 1}</td>`;
             
-            for (let i = 0; i < 10; i++) {
-                const simResult = runSingleSimulation(gates);
-                const row = document.createElement('tr');
+            let totalMinutes = 0;
+            
+            // Simulate each gate for all jobs
+            gates.forEach(gate => {
+                let gateTime = 0;
                 
-                // Add run number
-                row.innerHTML = `<td>${i + 1}</td>`;
+                // Process all jobs through this gate
+                for (let job = 0; job < NUM_JOBS; job++) {
+                    let attempts = 1;
+                    while (Math.random() * 100 > gate.passRate) {
+                        attempts++;
+                    }
+                    gateTime += gate.duration * attempts;
+                }
                 
-                // Add gate results
-                let totalHours = 0;
-                simResult.forEach(result => {
-                    const hours = (result.totalDuration / 60).toFixed(2);
-                    totalHours += parseFloat(hours);
-                    row.innerHTML += `<td>${hours}</td>`;
-                });
-                
-                // Add total
-                row.innerHTML += `<td class="total-column">${totalHours.toFixed(2)}</td>`;
-                
-                tbody.appendChild(row);
-            }
+                totalMinutes += gateTime;
+                row.innerHTML += `<td>${(gateTime / 60).toFixed(2)}</td>`;
+            });
+            
+            // Add total time in hours
+            row.innerHTML += `<td class="total-column">${(totalMinutes / 60).toFixed(2)}</td>`;
+            tableBody.appendChild(row);
         }
+    }
 
-        // Add event listener to run initial simulations when gates change
-        function onGatesChanged() {
-            updateCalculations();
-            if (document.getElementById('sim-table-body').children.length > 0) {
-                runSimulations();
-            }
-        }
+    // Modify handleSubmit to run simulations after adding/editing a gate
+    const originalHandleSubmit = handleSubmit;
+    handleSubmit = function() {
+        originalHandleSubmit();
+        runSimulations();
+    }
 
-        // Update existing functions to trigger simulation updates
-        const originalRenderGates = renderGates;
-        renderGates = function() {
-            originalRenderGates();
-            onGatesChanged();
-        };
+    // Modify removeGate to run simulations after removing a gate
+    const originalRemoveGate = removeGate;
+    removeGate = function(index) {
+        originalRemoveGate(index);
+        runSimulations();
+    }
+
+    // Modify renderGates to run simulations after reordering
+    const originalRenderGates = renderGates;
+    renderGates = function() {
+        originalRenderGates();
+        runSimulations();
+    }
     </script>
 </body>
 </html>
