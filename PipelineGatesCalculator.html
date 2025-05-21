@@ -80,6 +80,31 @@
             color: var(--success-color);
         }
 
+        /* Added for displaying full gate names in simulation */
+        .gate-header {
+            min-width: 100px;
+            text-align: center;
+            padding: 0 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .gate-value {
+            min-width: 100px;
+            text-align: center;
+        }
+
+        .gates-headers {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .gates-values {
+            display: flex;
+            justify-content: space-around;
+        }
+
         @media print {
             .no-print {
                 display: none !important;
@@ -278,7 +303,11 @@
             DRAGGING: 'dragging',
             EXTRA_HOURS_POSITIVE: 'extra-hours-positive',
             EXTRA_HOURS_ZERO: 'extra-hours-zero',
-            D_NONE: 'd-none'
+            D_NONE: 'd-none',
+            GATE_HEADER: 'gate-header',
+            GATE_VALUE: 'gate-value',
+            GATES_HEADERS: 'gates-headers',
+            GATES_VALUES: 'gates-values'
         },
         SELECTORS: {
             GATE_CARD: '.gate-card',
@@ -986,23 +1015,26 @@
             const attemptsHeader = document.getElementById('attempts-header-container');
             attemptsHeader.innerHTML = '';
 
+            // Create header with "Extra Attempts" label
             const attemptsHeaderEl = document.createElement('div');
             attemptsHeaderEl.className = 'd-flex flex-column';
             attemptsHeaderEl.innerHTML = '<span>Extra Attempts</span>';
 
-            const attemptsSubheaderEl = document.createElement('div');
-            attemptsSubheaderEl.className = 'd-flex gap-2';
+            // Create the gates headers container
+            const gatesHeadersContainer = document.createElement('div');
+            gatesHeadersContainer.className = CONSTANTS.CLASS_NAMES.GATES_HEADERS;
 
+            // Add each gate name as a header
             this.gates.forEach(gate => {
-                const shortName = gate.name.substring(0, 3);
-                const span = document.createElement('span');
-                span.className = 'text-nowrap';
-                span.textContent = shortName;
-                span.title = gate.name;
-                attemptsSubheaderEl.appendChild(span);
+                // Use the full gate name instead of abbreviating
+                const headerSpan = document.createElement('div');
+                headerSpan.className = CONSTANTS.CLASS_NAMES.GATE_HEADER;
+                headerSpan.textContent = gate.name;
+                headerSpan.title = gate.name;
+                gatesHeadersContainer.appendChild(headerSpan);
             });
 
-            attemptsHeaderEl.appendChild(attemptsSubheaderEl);
+            attemptsHeaderEl.appendChild(gatesHeadersContainer);
             attemptsHeader.appendChild(attemptsHeaderEl);
 
             // Add results rows
@@ -1022,11 +1054,11 @@
                 // Extra attempts
                 const attemptsCell = document.createElement('td');
                 const attemptsContainer = document.createElement('div');
-                attemptsContainer.className = 'd-flex gap-2';
+                attemptsContainer.className = CONSTANTS.CLASS_NAMES.GATES_VALUES;
 
                 result.attempts.forEach(attemptCount => {
-                    const attemptSpan = document.createElement('span');
-                    attemptSpan.className = 'text-nowrap';
+                    const attemptSpan = document.createElement('div');
+                    attemptSpan.className = CONSTANTS.CLASS_NAMES.GATE_VALUE;
                     attemptSpan.textContent = attemptCount;
                     attemptsContainer.appendChild(attemptSpan);
                 });
@@ -1062,7 +1094,7 @@
             // Average attempts
             const avgAttemptsCell = document.createElement('td');
             const avgAttemptsContainer = document.createElement('div');
-            avgAttemptsContainer.className = 'd-flex gap-2';
+            avgAttemptsContainer.className = CONSTANTS.CLASS_NAMES.GATES_VALUES;
 
             // Calculate average attempts for each gate
             const avgAttempts = Array(this.gates.length).fill(0);
@@ -1079,8 +1111,8 @@
 
             // Display average attempts
             avgAttempts.forEach(avgAttempt => {
-                const attemptSpan = document.createElement('span');
-                attemptSpan.className = 'text-nowrap';
+                const attemptSpan = document.createElement('div');
+                attemptSpan.className = CONSTANTS.CLASS_NAMES.GATE_VALUE;
                 attemptSpan.textContent = avgAttempt.toFixed(1);
                 avgAttemptsContainer.appendChild(attemptSpan);
             });
