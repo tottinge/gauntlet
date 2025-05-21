@@ -29,7 +29,19 @@
             min-height: 50px;
             padding: 10px 0;
         }
-    </style>
+    /* Add styles for the simulation table */
+    .simulation-table {
+        margin-top: 30px;
+        overflow-x: auto;
+    }
+    .simulation-table th {
+        min-width: 100px;
+    }
+    .total-column {
+        font-weight: bold;
+        background-color: #f8f9fa;
+    }
+</style>
 </head>
 <body>
     <div class="container mt-4">
@@ -69,6 +81,26 @@
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    
+    <!-- Add Simulation Table Section -->
+    <div class="container mt-4">
+        <h3>Simulation Results (10 runs, 100 jobs each)</h3>
+        <button class="btn btn-primary mb-3" onclick="runSimulations()">Run Simulations</button>
+        <div class="simulation-table">
+            <table class="table table-bordered">
+                <thead id="sim-table-head">
+                    <tr>
+                        <th>Run #</th>
+                        <!-- Gate columns will be added dynamically -->
+                        <th class="total-column">Total Hours</th>
+                    </tr>
+                </thead>
+                <tbody id="sim-table-body">
+                </tbody>
+            </table>
         </div>
     </div>
 
@@ -259,6 +291,98 @@
                 }
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
+    
+
+        // Add new simulation functions
+        function runSingleSimulation(gates) {
+            const results = gates.map(gate => ({ name: gate.name, executions: 0, totalDuration: 0 }));
+            let completedJobs = 0;
+            let currentJobPosition = 0;
+            let iterations = 0;
+            const MAX_ITERATIONS = 1000000; // Safety limit to prevent infinite loops
+            
+            while (completedJobs < 100 && iterations < MAX_ITERATIONS) {
+                iterations++;
+                const gate = gates[currentJobPosition];
+                const gateResult = results[currentJobPosition];
+                
+                // Execute the gate
+                gateResult.executions++;
+                gateResult.totalDuration += gate.duration;
+                
+                // Determine if the gate passes or fails
+                const random = Math.random() * 100;
+                if (random <= gate.passRate) {
+                    // Pass - move to next gate
+                    currentJobPosition++;
+                    if (currentJobPosition >= gates.length) {
+                        // Job completed successfully
+                        completedJobs++;
+                        currentJobPosition = 0;
+                    }
+                } else {
+                    // Fail - return to start
+                    currentJobPosition = 0;
+                }
+            }
+            
+            return results;
+        }
+
+        function runSimulations() {
+            if (gates.length === 0) {
+                alert('Please add some gates first');
+                return;
+            }
+
+            // Update table header
+            const thead = document.getElementById('sim-table-head').getElementsByTagName('tr')[0];
+            thead.innerHTML = '<th>Run #</th>';
+            gates.forEach(gate => {
+                thead.innerHTML += `<th>${gate.name}</th>`;
+            });
+            thead.innerHTML += '<th class="total-column">Total Hours</th>';
+
+            // Run 10 simulations
+            const tbody = document.getElementById('sim-table-body');
+            tbody.innerHTML = '';
+            
+            for (let i = 0; i < 10; i++) {
+                const simResult = runSingleSimulation(gates);
+                const row = document.createElement('tr');
+                
+                // Add run number
+                row.innerHTML = `<td>${i + 1}</td>`;
+                
+                // Add gate results
+                let totalHours = 0;
+                simResult.forEach(result => {
+                    const hours = (result.totalDuration / 60).toFixed(2);
+                    totalHours += parseFloat(hours);
+                    row.innerHTML += `<td>${hours}</td>`;
+                });
+                
+                // Add total
+                row.innerHTML += `<td class="total-column">${totalHours.toFixed(2)}</td>`;
+                
+                tbody.appendChild(row);
+            }
+        }
+
+        // Add event listener to run initial simulations when gates change
+        function onGatesChanged() {
+            updateCalculations();
+            if (document.getElementById('sim-table-body').children.length > 0) {
+                runSimulations();
+            }
+        }
+
+        // Update existing functions to trigger simulation updates
+        const originalRenderGates = renderGates;
+        renderGates = function() {
+            originalRenderGates();
+            onGatesChanged();
+        };
     </script>
 </body>
 </html>
