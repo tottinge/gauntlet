@@ -181,7 +181,7 @@
                                    id="gate-duration"
                                    name="gate-duration"
                                    placeholder="Enter duration"
-                                   min="1"
+                                   min="0"
                                    step="1"
                                    required
                                    aria-describedby="duration-help">
@@ -195,7 +195,8 @@
 
                         <div class="d-grid gap-2">
                             <button type="button" class="btn btn-primary" id="add-gate-btn">Add Gate</button>
-                            <button type="button" class="btn btn-secondary d-none" id="cancel-edit-btn">Cancel Edit</button>
+                            <button type="button" class="btn btn-secondary d-none" id="cancel-edit-btn">Cancel Edit
+                            </button>
                         </div>
                     </form>
                 </div>
@@ -248,11 +249,14 @@
             <div class="card mb-4">
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <h2 class="fs-5 mb-0">Pipeline Gates</h2>
-                    <button type="button" class="btn btn-primary btn-sm no-print" id="run-simulation-btn">Run Simulation</button>
+                    <button type="button" class="btn btn-primary btn-sm no-print" id="run-simulation-btn">Run
+                        Simulation
+                    </button>
                 </div>
                 <div class="card-body">
                     <div id="gates-container" class="gates-container">
-                        <p id="no-gates-message" class="text-center text-muted">No gates added yet. Add a gate to start building your pipeline.</p>
+                        <p id="no-gates-message" class="text-center text-muted">No gates added yet. Add a gate to start
+                            building your pipeline.</p>
                     </div>
                 </div>
             </div>
@@ -294,9 +298,9 @@
             DECIMAL_PLACES: 2
         },
         VALIDATION: {
-            MIN_PASS_RATE: 1,  // Minimum pass rate is now 1% to avoid infinite loops
+            MIN_PASS_RATE: 1,
             MAX_PASS_RATE: 100,
-            MIN_DURATION: 1,
+            MIN_DURATION: 0,
             MAX_NAME_LENGTH: 50
         },
         CLASS_NAMES: {
@@ -468,7 +472,7 @@
             const passRate = parseFloat(passRateInput.value);
             const duration = parseInt(durationInput.value);
 
-            Utils.log('Form data extracted', { name, passRate, duration });
+            Utils.log('Form data extracted', {name, passRate, duration});
 
             const gateData = {
                 id: this.editingGateId || Utils.generateId(),
@@ -572,11 +576,11 @@
                 const offset = y - box.top - box.height / 2;
 
                 if (offset < 0 && offset > closest.offset) {
-                    return { offset, element: child };
+                    return {offset, element: child};
                 } else {
                     return closest;
                 }
-            }, { offset: Number.NEGATIVE_INFINITY }).element;
+            }, {offset: Number.NEGATIVE_INFINITY}).element;
         }
 
         /**
@@ -606,7 +610,7 @@
         validateGateName(name) {
             // Check if name is empty
             if (!name || name.trim() === '') {
-                return { valid: false, message: 'Gate name cannot be empty.' };
+                return {valid: false, message: 'Gate name cannot be empty.'};
             }
 
             // Check if name is too long
@@ -617,7 +621,7 @@
                 };
             }
 
-            return { valid: true };
+            return {valid: true};
         }
 
         /**
@@ -627,7 +631,7 @@
          */
         validatePassRate(passRate) {
             if (isNaN(passRate)) {
-                return { valid: false, message: 'Pass rate must be a number.' };
+                return {valid: false, message: 'Pass rate must be a number.'};
             }
 
             if (passRate < CONSTANTS.VALIDATION.MIN_PASS_RATE || passRate > CONSTANTS.VALIDATION.MAX_PASS_RATE) {
@@ -637,7 +641,7 @@
                 };
             }
 
-            return { valid: true };
+            return {valid: true};
         }
 
         /**
@@ -647,21 +651,20 @@
          */
         validateDuration(duration) {
             if (isNaN(duration)) {
-                return { valid: false, message: 'Duration must be a number.' };
+                return {valid: false, message: 'Duration must be a number.'};
             }
 
             if (duration < CONSTANTS.VALIDATION.MIN_DURATION) {
                 return {
                     valid: false,
-                    message: `Duration must be at least ${CONSTANTS.VALIDATION.MIN_DURATION} minute.`
+                    message: `Duration must be at least ${CONSTANTS.VALIDATION.MIN_DURATION} minutes.`
                 };
             }
-
             if (!Number.isInteger(duration)) {
-                return { valid: false, message: 'Duration must be a whole number.' };
+                return {valid: false, message: 'Duration must be a whole number.'};
             }
 
-            return { valid: true };
+            return {valid: true};
         }
 
         /**
@@ -730,7 +733,7 @@
          * Render all gates in the container
          */
         renderGates() {
-            Utils.log('Rendering gates', { count: this.gates.length });
+            Utils.log('Rendering gates', {count: this.gates.length});
 
             const container = document.getElementById('gates-container');
             const noGatesMessage = document.getElementById('no-gates-message');
