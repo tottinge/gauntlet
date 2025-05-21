@@ -342,10 +342,14 @@
         gates.forEach(gate => {
             tableHead.innerHTML += `<th>${gate.name}</th>`;
         });
-        tableHead.innerHTML += '<th class="total-column">Total Hours</th>';
+        tableHead.innerHTML += '<th class="total-column">Total Hours</th><th class="total-column">Extra Hours</th>';
         
         // Clear table body
         tableBody.innerHTML = '';
+        
+        // Calculate ideal time (no failures)
+        const idealMinutes = gates.reduce((sum, gate) => sum + gate.duration, 0) * NUM_JOBS;
+        const idealHours = idealMinutes / 60;
         
         // Run simulations
         for (let run = 0; run < NUM_RUNS; run++) {
@@ -371,8 +375,15 @@
                 row.innerHTML += `<td>${(gateTime / 60).toFixed(2)}</td>`;
             });
             
-            // Add total time in hours
-            row.innerHTML += `<td class="total-column">${(totalMinutes / 60).toFixed(2)}</td>`;
+            const totalHours = totalMinutes / 60;
+            const extraHours = totalHours - idealHours;
+            
+            // Add total time and extra time in hours
+            row.innerHTML += `
+                <td class="total-column">${totalHours.toFixed(2)}</td>
+                <td class="total-column">${extraHours.toFixed(2)}</td>
+            `;
+            
             tableBody.appendChild(row);
         }
     }
