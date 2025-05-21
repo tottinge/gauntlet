@@ -226,8 +226,8 @@
                     <button type="button" class="btn btn-primary btn-sm no-print" id="run-simulation-btn">Run Simulation</button>
                 </div>
                 <div class="card-body">
-                    <div class="gates-container" id="gates-container">
-                        <p class="text-center text-muted" id="no-gates-message">No gates added yet. Add a gate to start building your pipeline.</p>
+                    <div id="gates-container" class="gates-container">
+                        <p id="no-gates-message" class="text-center text-muted">No gates added yet. Add a gate to start building your pipeline.</p>
                     </div>
                 </div>
             </div>
@@ -353,6 +353,18 @@
          */
         randomBool(probability) {
             return Math.random() < probability;
+        },
+
+        /**
+         * Log a message to the console with timestamp
+         */
+        log(message, data = null) {
+            const timestamp = new Date().toISOString().substring(11, 23);
+            if (data) {
+                console.log(`[${timestamp}] ${message}:`, data);
+            } else {
+                console.log(`[${timestamp}] ${message}`);
+            }
         }
     };
 
@@ -368,6 +380,8 @@
             this.editingGateId = null;
             this.simulationResults = [];
 
+            Utils.log('Initializing Pipeline Calculator');
+
             // Initialize event listeners
             this.initEventListeners();
         }
@@ -376,13 +390,17 @@
          * Set up event listeners for the application
          */
         initEventListeners() {
+            Utils.log('Setting up event listeners');
+
             // Add gate button click
             const addGateBtn = document.getElementById('add-gate-btn');
             if (addGateBtn) {
                 addGateBtn.addEventListener('click', () => {
-                    console.log('Add Gate button clicked');
+                    Utils.log('Add Gate button clicked');
                     this.handleAddGate();
                 });
+            } else {
+                console.error('Add Gate button not found in DOM');
             }
 
             // Cancel edit button
@@ -405,7 +423,7 @@
          * Handle adding a gate (used by Add Gate button)
          */
         handleAddGate() {
-            console.log('Handling add gate action');
+            Utils.log('Handling add gate action');
 
             // Get form values
             const nameInput = document.getElementById('gate-name');
@@ -421,7 +439,7 @@
             const passRate = parseFloat(passRateInput.value);
             const duration = parseInt(durationInput.value);
 
-            console.log('Form data extracted:', { name, passRate, duration });
+            Utils.log('Form data extracted', { name, passRate, duration });
 
             const gateData = {
                 id: this.editingGateId || Utils.generateId(),
@@ -466,11 +484,11 @@
 
             // Add or update the gate
             if (this.editingGateId) {
-                console.log('Updating existing gate', gateData);
+                Utils.log('Updating existing gate', gateData);
                 this.updateGate(gateData);
                 this.editingGateId = null;
             } else {
-                console.log('Adding new gate', gateData);
+                Utils.log('Adding new gate', gateData);
                 this.addGate(gateData);
             }
 
@@ -482,7 +500,7 @@
             // Update summary
             this.updateSummary();
 
-            console.log('Gate added/updated successfully');
+            Utils.log('Gate added/updated successfully');
         }
 
         /**
@@ -490,6 +508,11 @@
          */
         initDragAndDrop() {
             const container = document.getElementById('gates-container');
+
+            if (!container) {
+                console.error('Gates container not found for drag and drop initialization');
+                return;
+            }
 
             container.addEventListener('dragover', (e) => {
                 e.preventDefault();
@@ -617,6 +640,7 @@
          * @param {Object} gate - The gate object to add
          */
         addGate(gate) {
+            Utils.log('Adding new gate to pipeline', gate);
             this.gates.push(gate);
             this.renderGates();
         }
@@ -677,36 +701,38 @@
          * Render all gates in the container
          */
         renderGates() {
+            Utils.log('Rendering gates', { count: this.gates.length });
+
             const container = document.getElementById('gates-container');
             const noGatesMessage = document.getElementById('no-gates-message');
 
-            // Check if elements exist before manipulating them
             if (!container) {
-                console.error('Gates container not found');
+                console.error('Gates container not found in DOM');
                 return;
             }
 
             if (!noGatesMessage) {
-                console.error('No gates message element not found');
-                // Create it if it doesn't exist
-                const message = document.createElement('p');
-                message.id = 'no-gates-message';
-                message.className = 'text-center text-muted';
-                message.textContent = 'No gates added yet. Add a gate to start building your pipeline.';
-                container.appendChild(message);
+                console.error('No gates message element not found in DOM');
                 return;
             }
 
             if (this.gates.length === 0) {
+                Utils.log('No gates to display');
                 container.innerHTML = '';
                 container.appendChild(noGatesMessage);
                 noGatesMessage.classList.remove(CONSTANTS.CLASS_NAMES.D_NONE);
                 return;
             }
 
+            // Hide the no gates message
             noGatesMessage.classList.add(CONSTANTS.CLASS_NAMES.D_NONE);
-            container.innerHTML = '';
 
+            // Clear the container but keep the no gates message
+            let temp = container.removeChild(noGatesMessage);
+            container.innerHTML = '';
+            container.appendChild(temp);
+
+            Utils.log('Adding gate cards to container');
             this.gates.forEach(gate => {
                 const gateCard = document.createElement('div');
                 gateCard.className = 'card gate-card';
@@ -757,12 +783,16 @@
                     gateCard.classList.remove(CONSTANTS.CLASS_NAMES.DRAGGING);
                 });
             });
+
+            Utils.log('Finished rendering gates');
         }
 
         /**
          * Update the summary section
          */
         updateSummary() {
+            Utils.log('Updating summary information');
+
             const overallPassRateEl = document.getElementById('overall-pass-rate');
             const totalDurationEl = document.getElementById('total-duration');
             const expectedExtraTimeEl = document.getElementById('expected-extra-time');
@@ -1077,7 +1107,7 @@
 
     // Initialize the application when the DOM is fully loaded
     document.addEventListener('DOMContentLoaded', () => {
-        console.log('DOM fully loaded, initializing application');
+        Utils.log('DOM fully loaded, initializing application');
         window.pipelineCalculator = new PipelineCalculator();
     });
 </script>
