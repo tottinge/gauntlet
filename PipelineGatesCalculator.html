@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pipeline Gates Calculator</title>
-    <!-- Using minimal CDN for Bootstrap CSS only -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         .gate-card {
@@ -29,153 +28,93 @@
             min-height: 50px;
             padding: 10px 0;
         }
-    /* Add styles for the simulation table */
-    
-    /* Enhanced table styling */
-    .simulation-table {
-        margin-top: 30px;
-        overflow-x: auto;
-        border-radius: 8px;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    }
+        
+        .simulation-table {
+            margin-top: 30px;
+            overflow-x: auto;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
 
-    .simulation-table table {
-        margin-bottom: 0; /* Remove default bootstrap margin */
-    }
+        .simulation-table table {
+            margin-bottom: 0;
+        }
 
-    .simulation-table th {
-        min-width: 100px;
-        background-color: #f8f9fa;
-        border-bottom: 2px solid #dee2e6;
-        padding: 12px 15px;
-        font-weight: 600;
-        color: #495057;
-    }
+        .simulation-table th {
+            min-width: 100px;
+            background-color: #e3f2fd;
+            border-bottom: 2px solid #90caf9;
+            padding: 14px 15px;
+            font-weight: 600;
+            color: #1565c0;
+        }
 
-    .simulation-table td {
-        padding: 10px 15px;
-        vertical-align: middle;
-        border-color: #eee;
-    }
+        .simulation-table td {
+            padding: 10px 15px;
+            vertical-align: middle;
+            border-color: #eee;
+        }
 
-    .simulation-table tbody tr:hover {
-        background-color: #f8f9fa;
-    }
+        .simulation-table tbody tr:hover {
+            background-color: #f8f9fa;
+        }
 
-    .simulation-table .total-column {
-        font-weight: 600;
-        background-color: #f1f8ff;
-        border-left: 2px solid #dee2e6;
-    }
+        .simulation-table .total-column {
+            font-weight: 600;
+            background-color: #bbdefb;
+            border-left: 2px solid #90caf9;
+        }
 
-    /* Run number column styling */
-    .simulation-table td:first-child {
-        background-color: #f8f9fa;
-        font-weight: 500;
-        border-right: 2px solid #dee2e6;
-    }
+        .simulation-table td:first-child {
+            background-color: #f8f9fa;
+            font-weight: 500;
+            border-right: 2px solid #dee2e6;
+        }
 
-    /* Zebra striping */
-    .simulation-table tbody tr:nth-child(even) {
-        background-color: #fdfdfd;
-    }
+        .simulation-table tbody tr:nth-child(even) {
+            background-color: #fdfdfd;
+        }
 
-    /* Numbers styling */
-    .simulation-table td:not(:first-child) {
-        font-family: "Monaco", "Consolas", monospace;
-        text-align: right;
-    }
+        .simulation-table td:not(:first-child) {
+            font-family: "Monaco", "Consolas", monospace;
+            text-align: right;
+        }
 
-    /* Positive/negative value styling for extra hours */
-    .extra-hours-positive {
-        color: #dc3545;
-    }
+        .extra-hours-positive {
+            color: #d32f2f;
+        }
 
-    .extra-hours-zero {
-        color: #198754;
-    }
+        .extra-hours-zero {
+            color: #198754;
+        }
 
-    /* Header row */
-    .simulation-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 1rem;
-    }
+        .average-row {
+            border-top: 2px solid #90caf9;
+        }
 
-    .run-simulations-btn {
-        background-color: #0d6efd;
-        border: none;
-        padding: 8px 16px;
-        border-radius: 6px;
-        transition: all 0.2s ease;
-    }
+        .average-row td {
+            background-color: #fff3e0 !important;
+            color: #e65100;
+            border-bottom: none !important;
+            padding: 14px 15px;
+        }
 
-    .run-simulations-btn:hover {
-        background-color: #0b5ed7;
-        transform: translateY(-1px);
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    }
-</style>
+        .average-row .total-column {
+            background-color: #ffe0b2 !important;
+            border-left: 2px solid #ffb74d;
+        }
 
-<!-- Add these additional styles -->
-<style>
-    /* [Previous styles remain the same] */
-
-    /* Enhanced header styling */
-    .simulation-table thead th {
-        background-color: #e3f2fd; /* Light blue background */
-        color: #1565c0;
-        font-weight: 600;
-        padding: 14px 15px;
-        border-bottom: 2px solid #90caf9;
-    }
-
-    .simulation-table thead th.total-column {
-        background-color: #bbdefb; /* Slightly darker blue for total columns */
-        border-left: 2px solid #90caf9;
-    }
-
-    /* Average row (footer) styling */
-    .average-row {
-        border-top: 2px solid #90caf9;
-        font-weight: 600;
-        background-color: #fafafa !important;
-    }
-
-    .average-row td {
-        background-color: #fff3e0 !important; /* Light orange background */
-        color: #e65100;
-        border-bottom: none !important;
-        padding: 14px 15px;
-    }
-
-    .average-row .total-column {
-        background-color: #ffe0b2 !important; /* Slightly darker orange for total columns */
-        border-left: 2px solid #ffb74d;
-    }
-
-    .average-label {
-        font-style: italic;
-        background-color: #fff3e0 !important;
-        border-right: 2px solid #ffb74d !important;
-    }
-
-    /* Refine existing styles */
-    .simulation-table td:not(:first-child) {
-        font-family: "Monaco", "Consolas", monospace;
-        text-align: right;
-    }
-
-    .extra-hours-positive {
-        color: #d32f2f; /* Darker red for better
-</style>
+        .average-label {
+            font-style: italic;
+            background-color: #fff3e0 !important;
+            border-right: 2px solid #ffb74d !important;
+        }
+    </style>
 </head>
 <body>
     <div class="container mt-4">
         <h1>Pipeline Gates Calculator</h1>
         
-        <!-- Summary Section -->
         <div class="summary-box">
             <h3>Summary</h3>
             <div>Overall Pass Rate: <span id="overall-pass-rate">100%</span></div>
@@ -186,10 +125,8 @@
             </div>
         </div>
 
-        <!-- Gates Container -->
         <div class="gates-container" id="gates-container"></div>
 
-        <!-- Gate Form -->
         <div class="card mb-4">
             <div class="card-body">
                 <h5 class="card-title" id="form-title">Add New Gate</h5>
@@ -212,8 +149,6 @@
         </div>
     </div>
 
-    
-    <!-- Add Simulation Table Section -->
     <div class="container mt-4">
         <h3>Simulation Results (10 runs, 100 jobs each)</h3>
         <button class="btn btn-primary mb-3" onclick="runSimulations()">Run Simulations</button>
@@ -222,7 +157,6 @@
                 <thead id="sim-table-head">
                     <tr>
                         <th>Run #</th>
-                        <!-- Gate columns will be added dynamically -->
                         <th class="total-column">Total Hours</th>
                     </tr>
                 </thead>
@@ -237,33 +171,25 @@
         let editingIndex = -1;
 
         function calculateExtraTime(gates, numberOfJobs) {
-            // Calculate ideal time (single pass through all gates)
             const idealTimePerJob = gates.reduce((sum, gate) => sum + gate.duration, 0);
             const totalIdealTime = idealTimePerJob * numberOfJobs;
-        
-        function calculateExpectedTime() {
-            let expectedTime = 0;
             
-            for (let i = 0; i < gates.length; i++) {
-                const gate = gates[i];
-                const passRate = gate.passRate / 100;
-                
-                // For each gate, expected attempts = 1/passRate
-                // This accounts for retries needed at each gate
-                const expectedAttemptsAtThisGate = 1 / passRate;
-                
-                // Time at this gate = duration * expected attempts
-                expectedTime += gate.duration * expectedAttemptsAtThisGate;
+            function calculateExpectedTime() {
+                let expectedTime = 0;
+                for (let i = 0; i < gates.length; i++) {
+                    const gate = gates[i];
+                    const passRate = gate.passRate / 100;
+                    const expectedAttemptsAtThisGate = 1 / passRate;
+                    expectedTime += gate.duration * expectedAttemptsAtThisGate;
+                }
+                return expectedTime;
             }
             
-            return expectedTime;
+            const expectedTimePerJob = calculateExpectedTime();
+            const totalExpectedTime = expectedTimePerJob * numberOfJobs;
+            
+            return totalExpectedTime - totalIdealTime;
         }
-        
-        const expectedTimePerJob = calculateExpectedTime();
-        const totalExpectedTime = expectedTimePerJob * numberOfJobs;
-        
-        return totalExpectedTime - totalIdealTime;
-    }
 
         function handleSubmit() {
             const name = document.getElementById('gate-name').value;
@@ -294,6 +220,10 @@
             renderGates();
             updateCalculations();
             clearForm();
+            
+            if (gates.length > 0) {
+                runSimulations();
+            }
         }
 
         function startEdit(index) {
@@ -327,6 +257,9 @@
             gates.splice(index, 1);
             renderGates();
             updateCalculations();
+            if (gates.length > 0) {
+                runSimulations();
+            }
         }
 
         function renderGates() {
@@ -377,7 +310,6 @@
                 `${extraTime.toFixed(2)} minutes (${(extraTime/60).toFixed(2)} hours)`;
         }
 
-        // Drag and Drop Functionality
         const container = document.getElementById('gates-container');
 
         container.addEventListener('dragover', (e) => {
@@ -403,6 +335,9 @@
 
             renderGates();
             updateCalculations();
+            if (gates.length > 0) {
+                runSimulations();
+            }
         });
 
         function getDragAfterElement(container, y) {
@@ -419,160 +354,97 @@
                 }
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
-    
 
-        // Add new simulation functions
-        function runSingleSimulation(gates) {
-            const results = gates.map(gate => ({ name: gate.name, executions: 0, totalDuration: 0 }));
-            let completedJobs = 0;
-            let currentJobPosition = 0;
-            let iterations = 0;
-            const MAX_ITERATIONS = 1000000; // Safety limit to prevent infinite loops
+        function runSimulations() {
+            const NUM_RUNS = 10;
+            const NUM_JOBS = 100;
             
-            while (completedJobs < 100 && iterations < MAX_ITERATIONS) {
-                iterations++;
-                const gate = gates[currentJobPosition];
-                const gateResult = results[currentJobPosition];
-                
-                // Execute the gate
-                gateResult.executions++;
-                gateResult.totalDuration += gate.duration;
-                
-                // Determine if the gate passes or fails
-                const random = Math.random() * 100;
-                if (random <= gate.passRate) {
-                    // Pass - move to next gate
-                    currentJobPosition++;
-                    if (currentJobPosition >= gates.length) {
-                        // Job completed successfully
-                        completedJobs++;
-                        currentJobPosition = 0;
-                    }
-                } else {
-                    // Fail - return to start
-                    currentJobPosition = 0;
-                }
-            }
+            const idealMinutes = gates.reduce((sum, gate) => sum + gate.duration, 0) * NUM_JOBS;
+            const idealHours = idealMinutes / 60;
             
-            return results;
-        }
-
-    function runSimulations() {
-        const NUM_RUNS = 10;
-        const NUM_JOBS = 100;
-        
-        // Clear previous results
-        const tableHead = document.getElementById('sim-table-head').querySelector('tr');
-        const tableBody = document.getElementById('sim-table-body');
-        
-        // Reset table headers - remove "Hours" where (hrs) is used
-        tableHead.innerHTML = '<th>Run #</th>';
-        gates.forEach(gate => {
-            tableHead.innerHTML += `<th>${gate.name} (hrs)</th>`;
-        });
-        tableHead.innerHTML += `
-            <th class="total-column">Total (hrs)</th>
-            <th class="total-column">Extra (hrs)</th>
-        `;
-        
-        // Arrays to store column values for averaging
-        const gateValues = Array(gates.length).fill().map(() => []);
-        const totalHoursValues = [];
-        const extraHoursValues = [];
-        
-        // Run simulations
-        for (let run = 0; run < NUM_RUNS; run++) {
-            const row = document.createElement('tr');
-            row.innerHTML = `<td>${run + 1}</td>`;
+            const tableBody = document.getElementById('sim-table-body');
+            tableBody.innerHTML = '';
             
-            let totalMinutes = 0;
+            const tableHead = document.getElementById('sim-table-head').querySelector('tr');
             
-            // Simulate each gate for all jobs
-            gates.forEach((gate, gateIndex) => {
-                let gateTime = 0;
-                
-                // Process all jobs through this gate
-                for (let job = 0; job < NUM_JOBS; job++) {
-                    let attempts = 1;
-                    while (Math.random() * 100 > gate.passRate) {
-                        attempts++;
-                    }
-                    gateTime += gate.duration * attempts;
-                }
-                
-                totalMinutes += gateTime;
-                const gateHours = gateTime / 60;
-                gateValues[gateIndex].push(gateHours);
-                row.innerHTML += `<td>${gateHours.toFixed(2)}</td>`;
+            tableHead.innerHTML = '<th>Run #</th>';
+            gates.forEach(gate => {
+                tableHead.innerHTML += `<th>${gate.name} (hrs)</th>`;
             });
-            
-            const totalHours = totalMinutes / 60;
-            const extraHours = totalHours - idealHours;
-            const extraHoursFormatted = extraHours.toFixed(2);
-            
-            // Apply styling based on the value of extraHours
-            let extraHoursClass = 'extra-hours-positive';
-            if (extraHours <= 0) {
-                extraHoursClass = 'extra-hours-zero';
-            }
-            
-            // Add total time and extra time in hours
-            row.innerHTML += `
-                <td class="total-column">${totalHours.toFixed(2)}</td>
-                <td class="total-column ${extraHoursClass}">${extraHoursFormatted}</td>
+            tableHead.innerHTML += `
+                <th class="total-column">Total (hrs)</th>
+                <th class="total-column">Extra (hrs)</th>
             `;
             
-            totalHoursValues.push(totalHours);
-            extraHoursValues.push(extraHours);
-            tableBody.appendChild(row);
+            const gateValues = Array(gates.length).fill().map(() => []);
+            const totalHoursValues = [];
+            const extraHoursValues = [];
+            
+            for (let run = 0; run < NUM_RUNS; run++) {
+                const row = document.createElement('tr');
+                row.innerHTML = `<td>${run + 1}</td>`;
+                
+                let totalMinutes = 0;
+                
+                gates.forEach((gate, gateIndex) => {
+                    let gateTime = 0;
+                    
+                    for (let job = 0; job < NUM_JOBS; job++) {
+                        let attempts = 1;
+                        while (Math.random() * 100 > gate.passRate) {
+                            attempts++;
+                        }
+                        gateTime += gate.duration * attempts;
+                    }
+                    
+                    totalMinutes += gateTime;
+                    const gateHours = gateTime / 60;
+                    gateValues[gateIndex].push(gateHours);
+                    row.innerHTML += `<td>${gateHours.toFixed(2)}</td>`;
+                });
+                
+                const totalHours = totalMinutes / 60;
+                const extraHours = totalHours - idealHours;
+                const extraHoursFormatted = extraHours.toFixed(2);
+                
+                let extraHoursClass = 'extra-hours-positive';
+                if (extraHours <= 0) {
+                    extraHoursClass = 'extra-hours-zero';
+                }
+                
+                row.innerHTML += `
+                    <td class="total-column">${totalHours.toFixed(2)}</td>
+                    <td class="total-column ${extraHoursClass}">${extraHoursFormatted}</td>
+                `;
+                
+                totalHoursValues.push(totalHours);
+                extraHoursValues.push(extraHours);
+                tableBody.appendChild(row);
+            }
+            
+            const gateAverages = gateValues.map(gateValues => {
+                const sum = gateValues.reduce((acc, value) => acc + value, 0);
+                return sum / NUM_RUNS;
+            });
+            
+            const totalHoursAverage = totalHoursValues.reduce((acc, value) => acc + value, 0) / NUM_RUNS;
+            const extraHoursAverage = extraHoursValues.reduce((acc, value) => acc + value, 0) / NUM_RUNS;
+            
+            const averageRow = document.createElement('tr');
+            averageRow.classList.add('average-row');
+            averageRow.innerHTML = `<td><span class="average-label">Average</span></td>`;
+            
+            gateAverages.forEach(average => {
+                averageRow.innerHTML += `<td>${average.toFixed(2)}</td>`;
+            });
+            
+            averageRow.innerHTML += `
+                <td class="total-column">${totalHoursAverage.toFixed(2)}</td>
+                <td class="total-column">${extraHoursAverage.toFixed(2)}</td>
+            `;
+            
+            tableBody.appendChild(averageRow);
         }
-        
-        // Calculate Averages
-        const gateAverages = gateValues.map(gateValues => {
-            const sum = gateValues.reduce((acc, value) => acc + value, 0);
-            return sum / NUM_RUNS;
-        });
-        
-        const totalHoursAverage = totalHoursValues.reduce((acc, value) => acc + value, 0) / NUM_RUNS;
-        const extraHoursAverage = extraHoursValues.reduce((acc, value) => acc + value, 0) / NUM_RUNS;
-        
-        // Create Average Row
-        const averageRow = document.createElement('tr');
-        averageRow.classList.add('average-row');
-        averageRow.innerHTML = `<td><span class="average-label">Average</span></td>`;
-        
-        gateAverages.forEach(average => {
-            averageRow.innerHTML += `<td>${average.toFixed(2)}</td>`;
-        });
-        
-        averageRow.innerHTML += `
-            <td class="total-column">${totalHoursAverage.toFixed(2)}</td>
-            <td class="total-column">${extraHoursAverage.toFixed(2)}</td>
-        `;
-        
-        tableBody.appendChild(averageRow);
-    }
-
-    // Modify handleSubmit to run simulations after adding/editing a gate
-    const originalHandleSubmit = handleSubmit;
-    handleSubmit = function() {
-        originalHandleSubmit();
-        runSimulations();
-    }
-
-    // Modify removeGate to run simulations after removing a gate
-    const originalRemoveGate = removeGate;
-    removeGate = function(index) {
-        originalRemoveGate(index);
-        runSimulations();
-    }
-
-    // Modify renderGates to run simulations after reordering
-    const originalRenderGates = renderGates;
-    renderGates = function() {
-        originalRenderGates();
-        runSimulations();
-    }
     </script>
 </body>
 </html>
