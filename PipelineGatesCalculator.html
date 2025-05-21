@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pipeline Gates Calculator</title>
+    <!-- Using minimal CDN for Bootstrap CSS only -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .gate-card {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            cursor: move;
+        }
+        .gate-card.dragging {
+            opacity: 0.5;
+        }
+        .summary-box {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .gates-container {
+            min-height: 50px;
+            padding: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Pipeline Gates Calculator</h1>
+        
+        <!-- Summary Section -->
+        <div class="summary-box">
+            <h3>Summary</h3>
+            <div>Overall Pass Rate: <span id="overall-pass-rate">100%</span></div>
+            <div>Total Duration: <span id="total-duration">0</span> minutes</div>
+            <div>Expected Extra Time (100 jobs): <span id="extra-time">0</span></div>
+            <div class="mt-2">
+                <small class="text-muted">Extra time represents additional time needed due to failures and retries</small>
+            </div>
+        </div>
+
+        <!-- Gates Container -->
+        <div class="gates-container" id="gates-container"></div>
+
+        <!-- Gate Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title" id="form-title">Add New Gate</h5>
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <input type="text" class="form-control" id="gate-name" placeholder="Gate Name">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" id="pass-rate" placeholder="Pass Rate %" min="0" max="100">
+                    </div>
+                    <div class="col-md-3">
+                        <input type="number" class="form-control" id="duration" placeholder="Duration (min)" min="0">
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-primary w-100" id="submit-btn" onclick="handleSubmit()">Add Gate</button>
+                        <button class="btn btn-secondary w-100 mt-2" id="cancel-btn" onclick="cancelEdit()" style="display: none;">Cancel</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let gates = [];
+        let editingIndex = -1;
+
+        function calculateExtraTime(gates, numberOfJobs) {
+            const idealTimePerJob = gates.reduce((sum, gate) => sum + gate.duration, 0);
+            const totalIdealTime = idealTimePerJob * numberOfJobs;
+            
+            function calculateExpectedTime() {
+                let expectedTime = 0;
+                let cumulativeProbability = 1;
+                
+                for (let i = 0; i < gates.length; i++) {
+                    const gate = gates[i];
+                    const passRate = gate.passRate / 100;
+                    const expectedAttemptsAtThisGate = 1 / cumulativeProbability;
+                    expectedTime += gate.duration * expectedAttemptsAtThisGate;
+                    cumulativeProbability *= passRate;
+                }
+                
+                return expectedTime;
+            }
+            
+            const expectedTimePerJob = calculateExpectedTime();
+            const totalExpectedTime = expectedTimePerJob * numberOfJobs;
+            
+            return totalExpectedTime - totalIdealTime;
+        }
+
+        function handleSubmit() {
+            const name = document.getElementById('gate-name').value;
+            const passRate = document.getElementById('pass-rate').value;
+            const duration = document.getElementById('duration').value;
+
+            if (!name || !passRate || !duration) {
+                alert('Please fill in all fields');
+                return;
+            }
+
+            const gate = {
+                name,
+                passRate: parseFloat(passRate),
+                duration: parseInt(duration)
+            };
+
+            if (editingIndex >= 0) {
+                gates[editingIndex] = gate;
+                editingIndex = -1;
+                document.getElementById('form-title').textContent = 'Add New Gate';
+                document.getElementById('submit-btn').textContent = 'Add Gate';
+                document.getElementById('cancel-btn').style.display = 'none';
+            } else {
+                gates.push(gate);
+            }
+
+            renderGates();
+            updateCalculations();
+            clearForm();
+        }
+
+        function startEdit(index) {
+            editingIndex = index;
+            const gate = gates[index];
+            
+            document.getElementById('gate-name').value = gate.name;
+            document.getElementById('pass-rate').value = gate.passRate;
+            document.getElementById('duration').value = gate.duration;
+            
+            document.getElementById('form-title').textContent = 'Edit Gate';
+            document.getElementById('submit-btn').textContent = 'Save Changes';
+            document.getElementById('cancel-btn').style.display = 'block';
+        }
+
+        function cancelEdit() {
+            editingIndex = -1;
+            clearForm();
+            document.getElementById('form-title').textContent = 'Add New Gate';
+            document.getElementById('submit-btn').textContent = 'Add Gate';
+            document.getElementById('cancel-btn').style.display = 'none';
+        }
+
+        function clearForm() {
+            document.getElementById('gate-name').value = '';
+            document.getElementById('pass-rate').value = '';
+            document.getElementById('duration').value = '';
+        }
+
+        function removeGate(index) {
+            gates.splice(index, 1);
+            renderGates();
+            updateCalculations();
+        }
+
+        function renderGates() {
+            const container = document.getElementById('gates-container');
+            container.innerHTML = '';
+
+            gates.forEach((gate, index) => {
+                const gateElement = document.createElement('div');
+                gateElement.className = 'gate-card';
+                gateElement.draggable = true;
+                gateElement.innerHTML = `
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>${gate.name}</strong>
+                            <div>Pass Rate: ${gate.passRate}%</div>
+                            <div>Duration: ${gate.duration} min</div>
+                        </div>
+                        <div>
+                            <button class="btn btn-primary btn-sm me-2" onclick="startEdit(${index})">Edit</button>
+                            <button class="btn btn-danger btn-sm" onclick="removeGate(${index})">Remove</button>
+                        </div>
+                    </div>
+                `;
+
+                gateElement.addEventListener('dragstart', (e) => {
+                    e.target.classList.add('dragging');
+                    e.dataTransfer.setData('text/plain', index);
+                });
+
+                gateElement.addEventListener('dragend', (e) => {
+                    e.target.classList.remove('dragging');
+                });
+
+                container.appendChild(gateElement);
+            });
+        }
+
+        function updateCalculations() {
+            const overallPassRate = gates.reduce((acc, gate) => acc * (gate.passRate / 100), 1) * 100;
+            const totalDuration = gates.reduce((acc, gate) => acc + gate.duration, 0);
+            
+            const numberOfJobs = 100;
+            const extraTime = gates.length > 0 ? calculateExtraTime(gates, numberOfJobs) : 0;
+            
+            document.getElementById('overall-pass-rate').textContent = `${overallPassRate.toFixed(2)}%`;
+            document.getElementById('total-duration').textContent = totalDuration;
+            document.getElementById('extra-time').textContent = 
+                `${extraTime.toFixed(2)} minutes (${(extraTime/60).toFixed(2)} hours)`;
+        }
+
+        // Drag and Drop Functionality
+        const container = document.getElementById('gates-container');
+
+        container.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            const draggingElement = document.querySelector('.dragging');
+            const afterElement = getDragAfterElement(container, e.clientY);
+            
+            if (afterElement == null) {
+                container.appendChild(draggingElement);
+            } else {
+                container.insertBefore(draggingElement, afterElement);
+            }
+        });
+
+        container.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const sourceIndex = parseInt(e.dataTransfer.getData('text/plain'));
+            const cards = [...container.querySelectorAll('.gate-card')];
+            const targetIndex = cards.indexOf(document.querySelector('.dragging'));
+
+            const [movedGate] = gates.splice(sourceIndex, 1);
+            gates.splice(targetIndex, 0, movedGate);
+
+            renderGates();
+            updateCalculations();
+        });
+
+        function getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll('.gate-card:not(.dragging)')];
+
+            return draggableElements.reduce((closest, child) => {
+                const box = child.getBoundingClientRect();
+                const offset = y - box.top - box.height / 2;
+
+                if (offset < 0 && offset > closest.offset) {
+                    return { offset: offset, element: child };
+                } else {
+                    return closest;
+                }
+            }, { offset: Number.NEGATIVE_INFINITY }).element;
+        }
+    </script>
+</body>
+</html>
