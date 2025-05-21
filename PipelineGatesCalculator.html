@@ -77,29 +77,33 @@
         let editingIndex = -1;
 
         function calculateExtraTime(gates, numberOfJobs) {
+            // Calculate ideal time (single pass through all gates)
             const idealTimePerJob = gates.reduce((sum, gate) => sum + gate.duration, 0);
             const totalIdealTime = idealTimePerJob * numberOfJobs;
+        
+        function calculateExpectedTime() {
+            let expectedTime = 0;
             
-            function calculateExpectedTime() {
-                let expectedTime = 0;
-                let cumulativeProbability = 1;
+            for (let i = 0; i < gates.length; i++) {
+                const gate = gates[i];
+                const passRate = gate.passRate / 100;
                 
-                for (let i = 0; i < gates.length; i++) {
-                    const gate = gates[i];
-                    const passRate = gate.passRate / 100;
-                    const expectedAttemptsAtThisGate = 1 / cumulativeProbability;
-                    expectedTime += gate.duration * expectedAttemptsAtThisGate;
-                    cumulativeProbability *= passRate;
-                }
+                // For each gate, expected attempts = 1/passRate
+                // This accounts for retries needed at each gate
+                const expectedAttemptsAtThisGate = 1 / passRate;
                 
-                return expectedTime;
+                // Time at this gate = duration * expected attempts
+                expectedTime += gate.duration * expectedAttemptsAtThisGate;
             }
             
-            const expectedTimePerJob = calculateExpectedTime();
-            const totalExpectedTime = expectedTimePerJob * numberOfJobs;
-            
-            return totalExpectedTime - totalIdealTime;
+            return expectedTime;
         }
+        
+        const expectedTimePerJob = calculateExpectedTime();
+        const totalExpectedTime = expectedTimePerJob * numberOfJobs;
+        
+        return totalExpectedTime - totalIdealTime;
+    }
 
         function handleSubmit() {
             const name = document.getElementById('gate-name').value;
