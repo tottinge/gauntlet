@@ -30,16 +30,91 @@
             padding: 10px 0;
         }
     /* Add styles for the simulation table */
+    
+    /* Enhanced table styling */
     .simulation-table {
         margin-top: 30px;
         overflow-x: auto;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
+
+    .simulation-table table {
+        margin-bottom: 0; /* Remove default bootstrap margin */
+    }
+
     .simulation-table th {
         min-width: 100px;
-    }
-    .total-column {
-        font-weight: bold;
         background-color: #f8f9fa;
+        border-bottom: 2px solid #dee2e6;
+        padding: 12px 15px;
+        font-weight: 600;
+        color: #495057;
+    }
+
+    .simulation-table td {
+        padding: 10px 15px;
+        vertical-align: middle;
+        border-color: #eee;
+    }
+
+    .simulation-table tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+
+    .simulation-table .total-column {
+        font-weight: 600;
+        background-color: #f1f8ff;
+        border-left: 2px solid #dee2e6;
+    }
+
+    /* Run number column styling */
+    .simulation-table td:first-child {
+        background-color: #f8f9fa;
+        font-weight: 500;
+        border-right: 2px solid #dee2e6;
+    }
+
+    /* Zebra striping */
+    .simulation-table tbody tr:nth-child(even) {
+        background-color: #fdfdfd;
+    }
+
+    /* Numbers styling */
+    .simulation-table td:not(:first-child) {
+        font-family: "Monaco", "Consolas", monospace;
+        text-align: right;
+    }
+
+    /* Positive/negative value styling for extra hours */
+    .extra-hours-positive {
+        color: #dc3545;
+    }
+
+    .extra-hours-zero {
+        color: #198754;
+    }
+
+    /* Header row */
+    .simulation-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+    }
+
+    .run-simulations-btn {
+        background-color: #0d6efd;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 6px;
+        transition: all 0.2s ease;
+    }
+
+    .run-simulations-btn:hover {
+        background-color: #0b5ed7;
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 </style>
 </head>
@@ -329,7 +404,8 @@
             return results;
         }
 
-        function runSimulations() {
+    // Modify the runSimulations function to include the new styling
+    function runSimulations() {
         const NUM_RUNS = 10;
         const NUM_JOBS = 100;
         
@@ -377,11 +453,18 @@
             
             const totalHours = totalMinutes / 60;
             const extraHours = totalHours - idealHours;
+            const extraHoursFormatted = extraHours.toFixed(2);
+            
+            // Apply styling based on the value of extraHours
+            let extraHoursClass = 'extra-hours-positive';
+            if (extraHours <= 0) {
+                extraHoursClass = 'extra-hours-zero';
+            }
             
             // Add total time and extra time in hours
             row.innerHTML += `
                 <td class="total-column">${totalHours.toFixed(2)}</td>
-                <td class="total-column">${extraHours.toFixed(2)}</td>
+                <td class="total-column ${extraHoursClass}">${extraHoursFormatted}</td>
             `;
             
             tableBody.appendChild(row);
