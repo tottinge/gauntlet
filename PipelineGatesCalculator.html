@@ -3,810 +3,1083 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Pipeline Gates Calculator for visualizing and simulating pipeline execution times">
     <title>Pipeline Gates Calculator</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         :root {
-            --card-border-color: #dddddd;
-            --card-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            --primary-blue: #1565c0;
-            --light-blue: #e3f2fd;
-            --border-blue: #90caf9;
-            --table-border: #dee2e6;
-            --warning-orange: #e65100;
-            --light-orange: #fff3e0;
-            --border-orange: #ffb74d;
+            --primary-color: #0d6efd;
+            --secondary-color: #6c757d;
+            --success-color: #198754;
+            --danger-color: #dc3545;
+            --warning-color: #ffc107;
+            --info-color: #0dcaf0;
+            --light-color: #f8f9fa;
+            --dark-color: #212529;
+            --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            --hover-brightness: 0.95;
+            --dragging-brightness: 0.85;
+        }
+
+        body {
+            padding-top: 1rem;
+            padding-bottom: 2rem;
         }
 
         .gate-card {
-            background-color: #ffffff;
-            border: 1px solid var(--card-border-color);
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
+            cursor: grab;
+            transition: all 0.2s;
+            margin-bottom: 1rem;
             box-shadow: var(--card-shadow);
-            cursor: move;
-            transition: opacity 0.2s ease;
+        }
+
+        .gate-card:hover {
+            filter: brightness(var(--hover-brightness));
         }
 
         .gate-card.dragging {
             opacity: 0.5;
-        }
-
-        .summary-box {
-            background-color: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
+            filter: brightness(var(--dragging-brightness));
         }
 
         .gates-container {
-            min-height: 50px;
-            padding: 10px 0;
-        }
-        
-        .simulation-table {
-            margin-top: 30px;
-            overflow-x: auto;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            min-height: 200px;
         }
 
-        .simulation-table table {
-            margin-bottom: 0;
-            width: 100%;
-        }
-
-        .simulation-table th {
-            min-width: 100px;
-            background-color: var(--light-blue);
-            border-bottom: 2px solid var(--border-blue);
-            padding: 14px 15px;
-            font-weight: 600;
-            color: var(--primary-blue);
-        }
-
-        .simulation-table td {
-            padding: 10px 15px;
-            vertical-align: middle;
-            border-color: #eeeeee;
-        }
-
-        .simulation-table tbody tr:hover {
-            background-color: #f8f9fa;
-        }
-
-        .simulation-table .total-column {
-            font-weight: 600;
-            background-color: #bbdefb;
-            border-left: 2px solid var(--border-blue);
-        }
-
-        .simulation-table td:first-child {
-            background-color: #f8f9fa;
+        .card-title {
             font-weight: 500;
-            border-right: 2px solid var(--table-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
-        .simulation-table tbody tr:nth-child(even) {
-            background-color: #fdfdfd;
+        .card-title .actions {
+            display: flex;
+            gap: 0.5rem;
         }
 
-        .simulation-table td:not(:first-child) {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        .card-title button {
+            padding: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .simulation-results td,
+        .simulation-results th {
+            font-family: monospace;
             text-align: right;
         }
 
         .extra-hours-positive {
-            color: #d32f2f;
+            color: var(--danger-color);
         }
 
         .extra-hours-zero {
-            color: #198754;
-        }
-
-        .average-row {
-            border-top: 2px solid var(--border-blue);
-        }
-
-        .average-row td {
-            background-color: var(--light-orange);
-            color: var(--warning-orange);
-            border-bottom: none;
-            padding: 14px 15px;
-        }
-
-        .average-row .total-column {
-            background-color: #ffe0b2;
-            border-left: 2px solid var(--border-orange);
-        }
-
-        .average-label {
-            font-style: italic;
-            background-color: var(--light-orange);
-            border-right: 2px solid var(--border-orange);
-        }
-
-        .visually-hidden {
-            position: absolute;
-            width: 1px;
-            height: 1px;
-            padding: 0;
-            margin: -1px;
-            overflow: hidden;
-            clip: rect(0, 0, 0, 0);
-            white-space: nowrap;
-            border: 0;
+            color: var(--success-color);
         }
 
         @media print {
-            .btn {
-                display: none;
+            .no-print {
+                display: none !important;
             }
-            
-            .gate-card {
-                break-inside: avoid;
-                box-shadow: none;
-                border: 1px solid #000;
+
+            .container {
+                max-width: 100% !important;
+                width: 100% !important;
             }
-            
-            .simulation-table {
+
+            .card {
                 break-inside: avoid;
             }
         }
     </style>
 </head>
 <body>
-    <main class="container mt-4">
-        <h1>Pipeline Gates Calculator</h1>
-        
-        <div class="summary-box" role="region" aria-labelledby="summary-title">
-            <h2 class="h3" id="summary-title">Summary</h2>
-            <dl class="row mb-0">
-                <div class="row mb-2">
-                    <dt class="col-sm-4">Overall Pass Rate:</dt>
-                    <dd class="col-sm-8"><span id="overall-pass-rate">100</span>%</dd>
-                </div>
-                <div class="row mb-2">
-                    <dt class="col-sm-4">Total Duration:</dt>
-                    <dd class="col-sm-8"><span id="total-duration">0</span> minutes</dd>
-                </div>
-                <div class="row mb-2">
-                    <dt class="col-sm-4">Expected Extra Time (20 jobs):</dt>
-                    <dd class="col-sm-8"><span id="extra-time">0</span></dd>
-                </div>
-                <div class="row mb-2">
-                    <dt class="col-sm-4">Simulated Average Extra Time:</dt>
-                    <dd class="col-sm-8"><span id="simulated-extra-time">Not simulated yet</span></dd>
-                </div>
-            </dl>
-            <div class="mt-3">
-                <small class="text-muted" id="extra-time-explanation">
-                    Extra time represents additional time needed due to failures and retries
-                </small>
-            </div>
-        </div>
+<div class="container">
+    <header class="mb-4">
+        <h1 class="text-center">Pipeline Gates Calculator</h1>
+        <p class="text-center lead">Visualize and simulate pipeline execution times</p>
+    </header>
 
-        <section aria-labelledby="gates-section-title">
-            <h2 class="h3 visually-hidden" id="gates-section-title">Pipeline Gates</h2>
-            <div class="gates-container" 
-                 id="gates-container" 
-                 role="list" 
-                 aria-label="Pipeline Gates"
-                 data-testid="gates-container">
-            </div>
-        </section>
+    <div class="row">
+        <div class="col-md-4 order-md-1 mb-4">
+            <div class="card no-print">
+                <div class="card-header">
+                    <h2 class="fs-5 mb-0">Add Gate</h2>
+                </div>
+                <div class="card-body">
+                    <form id="gate-form" onsubmit="return false;">
+                        <div class="mb-3">
+                            <label for="gate-name" class="form-label">Gate Name</label>
+                            <input type="text"
+                                   class="form-control"
+                                   id="gate-name"
+                                   name="gate-name"
+                                   placeholder="Enter gate name"
+                                   required
+                                   maxlength="50"
+                                   aria-describedby="name-help">
+                            <div id="name-help" class="form-text">
+                                Enter a name for the pipeline gate.
+                            </div>
+                            <div class="invalid-feedback">
+                                Please enter a valid gate name.
+                            </div>
+                        </div>
 
-        <section class="card mb-4" aria-labelledby="form-title">
-            <div class="card-body">
-                <h2 class="h5 card-title" id="form-title">Add New Gate</h2>
-                <form id="gate-form" class="row g-3" novalidate>
-                    <div class="col-md-4">
-                        <label for="gate-name" class="form-label">Gate Name</label>
-                        <input type="text" 
-                               class="form-control" 
-                               id="gate-name" 
-                               name="gateName"
-                               placeholder="Enter gate name" 
-                               required 
-                               pattern="[A-Za-z0-9\s\-_]+" 
-                               maxlength="50"
-                               aria-describedby="gate-name-help">
-                        <div class="invalid-feedback">
-                            Please provide a valid gate name using letters, numbers, spaces, hyphens, or underscores.
+                        <div class="mb-3">
+                            <label for="gate-pass-rate" class="form-label">Pass Rate (%)</label>
+                            <input type="number"
+                                   class="form-control"
+                                   id="gate-pass-rate"
+                                   name="gate-pass-rate"
+                                   placeholder="Enter pass rate"
+                                   min="1"
+                                   max="100"
+                                   step="0.1"
+                                   required
+                                   aria-describedby="pass-rate-help">
+                            <div id="pass-rate-help" class="form-text">
+                                Enter a number between 1 and 100 representing percentage chance of passing.
+                            </div>
+                            <div class="invalid-feedback">
+                                Please enter a valid pass rate between 1% and 100%.
+                            </div>
                         </div>
-                        <div class="form-text" id="gate-name-help">
-                            Use letters, numbers, spaces, hyphens, or underscores
+
+                        <div class="mb-3">
+                            <label for="gate-duration" class="form-label">Duration (minutes)</label>
+                            <input type="number"
+                                   class="form-control"
+                                   id="gate-duration"
+                                   name="gate-duration"
+                                   placeholder="Enter duration"
+                                   min="1"
+                                   step="1"
+                                   required
+                                   aria-describedby="duration-help">
+                            <div id="duration-help" class="form-text">
+                                Enter a positive integer representing minutes for gate execution.
+                            </div>
+                            <div class="invalid-feedback">
+                                Please enter a valid duration (positive integer).
+                            </div>
                         </div>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="pass-rate" class="form-label">Pass Rate (%)</label>
-                        <input type="number" 
-                               class="form-control" 
-                               id="pass-rate" 
-                               name="passRate"
-                               placeholder="Enter pass rate" 
-                               required 
-                               min="0" 
-                               max="100" 
-                               step="0.1"
-                               aria-describedby="pass-rate-help">
-                        <div class="invalid-feedback">
-                            Please enter a number between 0 and 100.
-                        </div>
-                        <div class="form-text" id="pass-rate-help">
-                            Value between 0 and 100
-                        </div>
-                    </div>
-                    <div class="col-md-3">
-                        <label for="duration" class="form-label">Duration (min)</label>
-                        <input type="number" 
-                               class="form-control" 
-                               id="duration" 
-                               name="duration"
-                               placeholder="Enter duration" 
-                               required 
-                               min="1" 
-                               step="1"
-                               aria-describedby="duration-help">
-                        <div class="invalid-feedback">
-                            Please enter a positive number for duration.
-                        </div>
-                        <div class="form-text" id="duration-help">
-                            Positive whole number
-                        </div>
-                    </div>
-                    <div class="col-md-2">
-                        <label class="visually-hidden">Actions</label>
+
                         <div class="d-grid gap-2">
-                            <button type="submit" 
-                                    class="btn btn-primary" 
-                                    id="submit-btn" 
-                                    aria-label="Add new gate">
-                                Add Gate
-                            </button>
-                            <button type="button" 
-                                    class="btn btn-secondary d-none" 
-                                    id="cancel-btn" 
-                                    onclick="cancelEdit()" 
-                                    aria-label="Cancel editing">
-                                Cancel
-                            </button>
+                            <button type="button" class="btn btn-primary" id="add-gate-btn">Add Gate</button>
+                            <button type="button" class="btn btn-secondary d-none" id="cancel-edit-btn">Cancel Edit</button>
                         </div>
-                    </div>
-                </form>
-            </div>
-        </section>
-
-        <section class="mt-4" aria-labelledby="simulation-title">
-            <h2 class="h3" id="simulation-title">Simulation Results</h2>
-            <p class="text-muted">Running 20 simulations with 20 jobs each</p>
-            
-            <div class="mb-3">
-                <button type="button" 
-                        class="btn btn-primary" 
-                        id="run-simulation-btn"
-                        onclick="runSimulations()" 
-                        aria-label="Run pipeline simulations">
-                    Run Simulations
-                </button>
-            </div>
-            
-            <div class="simulation-table">
-                <table class="table table-bordered" 
-                       role="grid" 
-                       aria-label="Simulation Results"
-                       id="simulation-table">
-                    <thead id="sim-table-head">
-                        <tr role="row">
-                            <th role="columnheader" scope="col">Run #</th>
-                            <th role="columnheader" scope="col" class="total-column">Total Hours</th>
-                        </tr>
-                    </thead>
-                    <tbody id="sim-table-body">
-                    </tbody>
-                </table>
-            </div>
-        </section>
-    </main>
-
-    <template id="gate-card-template">
-        <div class="gate-card" draggable="true" role="listitem">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <strong class="gate-name"></strong>
-                    <div class="gate-pass-rate"></div>
-                    <div class="gate-duration"></div>
-                </div>
-                <div>
-                    <button type="button" class="btn btn-primary btn-sm me-2 edit-btn">Edit</button>
-                    <button type="button" class="btn btn-danger btn-sm remove-btn">Remove</button>
+                    </form>
                 </div>
             </div>
         </div>
-    </template>
 
-    <script>
-        // Constants
-        const CONSTANTS = {
-            SIMULATION: {
-                RUNS: 20,           // Changed from 10 to 20
-                JOBS_PER_RUN: 20,   // Changed from 100 to 20
-                DECIMAL_PLACES: 2
-            },
-            VALIDATION: {
-                MIN_PASS_RATE: 0,
-                MAX_PASS_RATE: 100,
-                MIN_DURATION: 1,
-                MAX_NAME_LENGTH: 50
-            },
-            CLASS_NAMES: {
-                DRAGGING: 'dragging',
-                EXTRA_HOURS_POSITIVE: 'extra-hours-positive',
-                EXTRA_HOURS_ZERO: 'extra-hours-zero',
-                D_NONE: 'd-none'
-            },
-            SELECTORS: {
-                GATE_CARD: '.gate-card',
-                DRAGGING: '.dragging'
-            }
-        };
+        <div class="col-md-8 order-md-0">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2 class="fs-5 mb-0">Summary</h2>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h3 class="card-title fs-6">Overall Pass Rate</h3>
+                                    <p class="card-text display-6" id="overall-pass-rate">100%</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h3 class="card-title fs-6">Total Duration</h3>
+                                    <p class="card-text display-6" id="total-duration">0 min</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h3 class="card-title fs-6">Expected Extra Time (100 jobs)</h3>
+                                    <p class="card-text display-6" id="expected-extra-time">0 hrs</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body">
+                                    <h3 class="card-title fs-6">Simulated Avg Extra Time</h3>
+                                    <p class="card-text display-6" id="simulated-extra-time">0 hrs</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
 
-        // State Management
-        const State = {
-            gates: [],
-            editingIndex: -1,
-            simulation: {
-                results: [],
-                isRunning: false
-            }
-        };
+            <div class="card mb-4">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h2 class="fs-5 mb-0">Pipeline Gates</h2>
+                    <button type="button" class="btn btn-primary btn-sm no-print" id="run-simulation-btn">Run Simulation</button>
+                </div>
+                <div class="card-body">
+                    <div class="gates-container" id="gates-container">
+                        <p class="text-center text-muted" id="no-gates-message">No gates added yet. Add a gate to start building your pipeline.</p>
+                    </div>
+                </div>
+            </div>
 
-        // Utility Functions
-        const Utils = {
-            safeParseNumber(value, defaultValue = 0) {
-                const parsed = parseFloat(value);
-                return isNaN(parsed) ? defaultValue : parsed;
-            },
+            <div class="card mb-4 d-none" id="simulation-results-container">
+                <div class="card-header">
+                    <h2 class="fs-5 mb-0">Simulation Results</h2>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm simulation-results">
+                            <thead>
+                            <tr>
+                                <th scope="col">Run</th>
+                                <th scope="col">Jobs</th>
+                                <th scope="col" id="attempts-header-container"></th>
+                                <th scope="col">Extra Hours</th>
+                            </tr>
+                            </thead>
+                            <tbody id="simulation-results">
+                            <!-- Simulation results will be added here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
-            formatNumber(value, decimals = CONSTANTS.SIMULATION.DECIMAL_PLACES) {
-                return Number(value).toFixed(decimals);
-            },
+<script>
+    /**
+     * Constants used throughout the application
+     */
+    const CONSTANTS = {
+        SIMULATION: {
+            RUNS: 10,
+            JOBS_PER_RUN: 100,
+            DECIMAL_PLACES: 2
+        },
+        VALIDATION: {
+            MIN_PASS_RATE: 1,  // Minimum pass rate is now 1% to avoid infinite loops
+            MAX_PASS_RATE: 100,
+            MIN_DURATION: 1,
+            MAX_NAME_LENGTH: 50
+        },
+        CLASS_NAMES: {
+            DRAGGING: 'dragging',
+            EXTRA_HOURS_POSITIVE: 'extra-hours-positive',
+            EXTRA_HOURS_ZERO: 'extra-hours-zero',
+            D_NONE: 'd-none'
+        },
+        SELECTORS: {
+            GATE_CARD: '.gate-card',
+            DRAGGING: '.dragging'
+        }
+    };
 
-            escapeHtml(unsafe) {
-                if (typeof unsafe !== 'string') return '';
-                return unsafe
-                    .replace(/&/g, "&amp;")
-                    .replace(/</g, "&lt;")
-                    .replace(/>/g, "&gt;")
-                    .replace(/"/g, "&quot;")
-                    .replace(/'/g, "&#039;");
-            },
+    /**
+     * Utility functions for common operations
+     */
+    const Utils = {
+        /**
+         * Generate a random ID for gates
+         * @returns {string} A random ID
+         */
+        generateId() {
+            return Math.random().toString(36).substring(2, 10);
+        },
 
-            getElementById(id) {
-                return document.getElementById(id);
-            },
+        /**
+         * Escape HTML to prevent XSS attacks
+         * @param {string} html - The HTML string to escape
+         * @returns {string} The escaped HTML string
+         */
+        escapeHtml(html) {
+            const div = document.createElement('div');
+            div.textContent = html;
+            return div.innerHTML;
+        },
 
-            validateGate(gate) {
-                return (
-                    gate &&
-                    typeof gate.name === 'string' &&
-                    gate.name.length > 0 &&
-                    gate.name.length <= CONSTANTS.VALIDATION.MAX_NAME_LENGTH &&
-                    typeof gate.passRate === 'number' &&
-                    gate.passRate >= CONSTANTS.VALIDATION.MIN_PASS_RATE &&
-                    gate.passRate <= CONSTANTS.VALIDATION.MAX_PASS_RATE &&
-                    typeof gate.duration === 'number' &&
-                    gate.duration >= CONSTANTS.VALIDATION.MIN_DURATION
-                );
-            }
-        };
+        /**
+         * Format a number as a percentage
+         * @param {number} value - The value to format
+         * @param {number} decimalPlaces - The number of decimal places to show
+         * @returns {string} The formatted percentage
+         */
+        formatPercent(value, decimalPlaces = CONSTANTS.SIMULATION.DECIMAL_PLACES) {
+            return `${value.toFixed(decimalPlaces)}%`;
+        },
 
-        // Gate Management
-        const GateManager = {
-            createGate(name, passRate, duration) {
-                return {
-                    name: name.trim(),
-                    passRate: Utils.safeParseNumber(passRate),
-                    duration: Utils.safeParseNumber(duration)
-                };
-            },
+        /**
+         * Format a number as minutes
+         * @param {number} minutes - The minutes to format
+         * @returns {string} The formatted minutes
+         */
+        formatMinutes(minutes) {
+            return `${minutes} min`;
+        },
 
-            renderGateCard(gate, index) {
-                const template = document.getElementById('gate-card-template');
-                const card = template.content.cloneNode(true).querySelector('.gate-card');
-                
-                card.dataset.index = index;
-                card.querySelector('.gate-name').textContent = Utils.escapeHtml(gate.name);
-                card.querySelector('.gate-pass-rate').textContent = `Pass Rate: ${gate.passRate}%`;
-                card.querySelector('.gate-duration').textContent = `Duration: ${gate.duration} minutes`;
+        /**
+         * Format a number as hours
+         * @param {number} hours - The hours to format
+         * @returns {string} The formatted hours
+         */
+        formatHours(hours) {
+            return `${hours.toFixed(CONSTANTS.SIMULATION.DECIMAL_PLACES)} hrs`;
+        },
 
-                card.querySelector('.edit-btn').onclick = () => this.startEdit(index);
-                card.querySelector('.remove-btn').onclick = () => this.removeGate(index);
+        /**
+         * Convert minutes to hours
+         * @param {number} minutes - The minutes to convert
+         * @returns {number} The equivalent hours
+         */
+        minutesToHours(minutes) {
+            return minutes / 60;
+        },
 
-                card.addEventListener('dragstart', () => {
-                    card.classList.add(CONSTANTS.CLASS_NAMES.DRAGGING);
+        /**
+         * Get a random boolean with a certain probability of being true
+         * @param {number} probability - The probability of getting true (0-1)
+         * @returns {boolean} The random boolean
+         */
+        randomBool(probability) {
+            return Math.random() < probability;
+        }
+    };
+
+    /**
+     * Pipeline Gates Calculator application
+     */
+    class PipelineCalculator {
+        /**
+         * Initialize the application
+         */
+        constructor() {
+            this.gates = [];
+            this.editingGateId = null;
+            this.simulationResults = [];
+
+            // Initialize event listeners
+            this.initEventListeners();
+        }
+
+        /**
+         * Set up event listeners for the application
+         */
+        initEventListeners() {
+            // Add gate button click
+            const addGateBtn = document.getElementById('add-gate-btn');
+            if (addGateBtn) {
+                addGateBtn.addEventListener('click', () => {
+                    console.log('Add Gate button clicked');
+                    this.handleAddGate();
                 });
-
-                card.addEventListener('dragend', () => {
-                    card.classList.remove(CONSTANTS.CLASS_NAMES.DRAGGING);
-                });
-
-                return card;
-            },
-
-            renderAllGates() {
-                const container = document.getElementById('gates-container');
-                if (!container) return;
-
-                container.innerHTML = '';
-                State.gates.forEach((gate, index) => {
-                    container.appendChild(this.renderGateCard(gate, index));
-                });
-            },
-
-            startEdit(index) {
-                if (index < 0 || index >= State.gates.length) return;
-
-                State.editingIndex = index;
-                const gate = State.gates[index];
-                
-                const form = document.getElementById('gate-form');
-                if (form) {
-                    form.elements['gateName'].value = gate.name;
-                    form.elements['passRate'].value = gate.passRate;
-                    form.elements['duration'].value = gate.duration;
-                }
-
-                const formTitle = document.getElementById('form-title');
-                const submitBtn = document.getElementById('submit-btn');
-                const cancelBtn = document.getElementById('cancel-btn');
-
-                if (formTitle) formTitle.textContent = 'Edit Gate';
-                if (submitBtn) {
-                    submitBtn.textContent = 'Save Changes';
-                    submitBtn.setAttribute('aria-label', 'Save gate changes');
-                }
-                if (cancelBtn) cancelBtn.classList.remove(CONSTANTS.CLASS_NAMES.D_NONE);
-            },
-
-            removeGate(index) {
-                if (index < 0 || index >= State.gates.length) return;
-                
-                State.gates.splice(index, 1);
-                this.renderAllGates();
-                UIManager.updateCalculations();
-                SimulationManager.runSimulations();
             }
-        };
 
-        // Simulation Management
-        const SimulationManager = {
-            calculateExtraTime(gates, numberOfJobs) {
-                if (!Array.isArray(gates) || !gates.length || typeof numberOfJobs !== 'number') {
-                    return 0;
-                }
-
-                const idealTimePerJob = gates.reduce((sum, gate) => sum + gate.duration, 0);
-                const totalIdealTime = idealTimePerJob * numberOfJobs;
-                
-                const expectedTimePerJob = gates.reduce((expectedTime, gate) => {
-                    const passRate = gate.passRate / 100;
-                    const expectedAttemptsAtThisGate = 1 / passRate;
-                    return expectedTime + (gate.duration * expectedAttemptsAtThisGate);
-                }, 0);
-                
-                const totalExpectedTime = expectedTimePerJob * numberOfJobs;
-                return totalExpectedTime - totalIdealTime;
-            },
-
-            runSingleSimulation(gates, numberOfJobs) {
-                const results = {
-                    totalTime: 0,
-                    gateResults: gates.map(() => ({ attempts: 0, failures: 0, timeSpent: 0 }))
-                };
-
-                for (let job = 0; job < numberOfJobs; job++) {
-                    let completed = false;
-                    
-                    while (!completed) {
-                        let pipelineSuccess = true;
-                        
-                        for (let i = 0; i < gates.length; i++) {
-                            const gate = gates[i];
-                            results.gateResults[i].attempts++;
-                            
-                            // Check if this gate passes
-                            if (Math.random() * 100 > gate.passRate) {
-                                // Gate failed
-                                results.gateResults[i].failures++;
-                                pipelineSuccess = false;
-                                
-                                // Add the time spent at this gate
-                                results.gateResults[i].timeSpent += gate.duration;
-                                results.totalTime += gate.duration;
-                                
-                                // Break the inner loop to restart the pipeline
-                                break;
-                            }
-                            
-                            // Gate passed, add the time
-                            results.gateResults[i].timeSpent += gate.duration;
-                            results.totalTime += gate.duration;
-                        }
-                        
-                        // If we made it through all gates, the job is complete
-                        if (pipelineSuccess) {
-                            completed = true;
-                        }
-                    }
-                }
-
-                return results;
-            },
-
-            runSimulations() {
-                if (State.simulation.isRunning || !State.gates.length) return;
-                
-                State.simulation.isRunning = true;
-                const results = [];
-                const idealTime = State.gates.reduce((sum, gate) => 
-                    sum + gate.duration * CONSTANTS.SIMULATION.JOBS_PER_RUN, 0) / 60;
-
-                try {
-                    for (let i = 0; i < CONSTANTS.SIMULATION.RUNS; i++) {
-                        const simResult = this.runSingleSimulation(
-                            State.gates, 
-                            CONSTANTS.SIMULATION.JOBS_PER_RUN
-                        );
-                        
-                        results.push({
-                            run: i + 1,
-                            totalHours: simResult.totalTime / 60,
-                            extraHours: (simResult.totalTime / 60) - idealTime,
-                            gateResults: simResult.gateResults
-                        });
-                    }
-
-                    const averageExtraHours = results.reduce((sum, r) => 
-                        sum + r.extraHours, 0) / results.length;
-
-                    UIManager.renderSimulationResults(results, averageExtraHours);
-                } finally {
-                    State.simulation.isRunning = false;
-                }
+            // Cancel edit button
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            if (cancelEditBtn) {
+                cancelEditBtn.addEventListener('click', this.cancelEdit.bind(this));
             }
-        };
 
-        // UI Management
-        const UIManager = {
-            updateCalculations() {
-                const overallPassRate = State.gates.reduce(
-                    (acc, gate) => acc * (gate.passRate / 100), 1
-                ) * 100;
-                
-                const totalDuration = State.gates.reduce(
-                    (acc, gate) => acc + gate.duration, 0
-                );
-                
-                const extraTime = State.gates.length > 0 ? 
-                    SimulationManager.calculateExtraTime(
-                        State.gates, 
-                        CONSTANTS.SIMULATION.JOBS_PER_RUN
-                    ) : 0;
+            // Run simulation button
+            const runSimBtn = document.getElementById('run-simulation-btn');
+            if (runSimBtn) {
+                runSimBtn.addEventListener('click', this.runSimulation.bind(this));
+            }
 
-                const elements = {
-                    passRate: document.getElementById('overall-pass-rate'),
-                    duration: document.getElementById('total-duration'),
-                    extraTime: document.getElementById('extra-time')
-                };
+            // Drag and drop functionality
+            this.initDragAndDrop();
+        }
 
-                if (elements.passRate) {
-                    elements.passRate.textContent = Utils.formatNumber(overallPassRate);
-                }
-                if (elements.duration) {
-                    elements.duration.textContent = totalDuration.toString();
-                }
-                if (elements.extraTime) {
-                    elements.extraTime.textContent = 
-                        `${Utils.formatNumber(extraTime)} minutes ` +
-                        `(${Utils.formatNumber(extraTime/60)} hours)`;
-                }
-            },
+        /**
+         * Handle adding a gate (used by Add Gate button)
+         */
+        handleAddGate() {
+            console.log('Handling add gate action');
 
-            renderSimulationResults(results, averageExtraHours) {
-                const tableBody = document.getElementById('sim-table-body');
-                const tableHead = document.getElementById('sim-table-head')?.querySelector('tr');
-                
-                if (!tableBody || !tableHead) return;
+            // Get form values
+            const nameInput = document.getElementById('gate-name');
+            const passRateInput = document.getElementById('gate-pass-rate');
+            const durationInput = document.getElementById('gate-duration');
 
-                // Update headers
-                let headerHtml = `
-        <th role="columnheader" scope="col">Run #</th>
-        ${State.gates.map(gate => `
-            <th role="columnheader" scope="col">${Utils.escapeHtml(gate.name)}</th>
-        `).join('')}
-        <th role="columnheader" scope="col" class="total-column">Total Hours</th>
-    `;
-    tableHead.innerHTML = headerHtml;
-
-    // Update body
-    tableBody.innerHTML = results.map(result => `
-        <tr>
-            <td>${result.run}</td>
-            ${result.gateResults.map(gr => `
-                <td>${Utils.formatNumber(gr.timeSpent)}</td>
-            `).join('')}
-            <td class="total-column">
-                ${Utils.formatNumber(result.totalHours)}
-            </td>
-        </tr>
-    `).join('') + `
-        <tr class="average-row">
-            <td class="average-label">Average</td>
-            ${State.gates.map((_, i) => `
-                <td>${Utils.formatNumber(
-                    results.reduce((sum, r) => 
-                        sum + r.gateResults[i].timeSpent, 0) / 
-                        CONSTANTS.SIMULATION.RUNS
-                )}</td>
-            `).join('')}
-            <td class="total-column">
-                ${Utils.formatNumber(
-                    results.reduce((sum, r) => 
-                        sum + r.totalHours, 0) / CONSTANTS.SIMULATION.RUNS
-                )}
-            </td>
-        </tr>
-    `;
-
-    // Update extra time display
-    const extraTimeElement = document.getElementById('simulated-extra-time');
-    if (extraTimeElement) {
-        extraTimeElement.textContent = `${Utils.formatNumber(averageExtraHours)} hours`;
-        extraTimeElement.className = averageExtraHours > 0 ? 
-            CONSTANTS.CLASS_NAMES.EXTRA_HOURS_POSITIVE : 
-            CONSTANTS.CLASS_NAMES.EXTRA_HOURS_ZERO;
-    }
-}
-        };
-
-        // Event Handlers
-        function handleSubmit(event) {
-            event?.preventDefault();
-
-            const form = event?.target;
-            if (!form) return;
-
-            const formData = new FormData(form);
-            const gate = GateManager.createGate(
-                formData.get('gateName'),
-                formData.get('passRate'),
-                formData.get('duration')
-            );
-
-            if (!Utils.validateGate(gate)) {
-                const nameInput = document.getElementById('gate-name');
-                if (nameInput) nameInput.classList.add('is-invalid');
+            if (!nameInput || !passRateInput || !durationInput) {
+                console.error('Form inputs not found');
                 return;
             }
 
-            if (State.editingIndex >= 0) {
-                State.gates[State.editingIndex] = gate;
-                State.editingIndex = -1;
-                
-                const formTitle = document.getElementById('form-title');
-                const submitBtn = document.getElementById('submit-btn');
-                const cancelBtn = document.getElementById('cancel-btn');
+            const name = nameInput.value;
+            const passRate = parseFloat(passRateInput.value);
+            const duration = parseInt(durationInput.value);
 
-                if (formTitle) formTitle.textContent = 'Add New Gate';
-                if (submitBtn) {
-                    submitBtn.textContent = 'Add Gate';
-                    submitBtn.setAttribute('aria-label', 'Add new gate');
+            console.log('Form data extracted:', { name, passRate, duration });
+
+            const gateData = {
+                id: this.editingGateId || Utils.generateId(),
+                name,
+                passRate,
+                duration
+            };
+
+            // Validate the gate data
+            const nameValidation = this.validateGateName(gateData.name);
+            const passRateValidation = this.validatePassRate(gateData.passRate);
+            const durationValidation = this.validateDuration(gateData.duration);
+
+            if (!nameValidation.valid || !passRateValidation.valid || !durationValidation.valid) {
+                // Show validation errors
+                if (!nameValidation.valid) {
+                    nameInput.setCustomValidity(nameValidation.message);
+                    nameInput.reportValidity();
+                    return;
                 }
-                if (cancelBtn) cancelBtn.classList.add(CONSTANTS.CLASS_NAMES.D_NONE);
-            } else {
-                State.gates.push(gate);
+
+                if (!passRateValidation.valid) {
+                    passRateInput.setCustomValidity(passRateValidation.message);
+                    passRateInput.reportValidity();
+                    return;
+                }
+
+                if (!durationValidation.valid) {
+                    durationInput.setCustomValidity(durationValidation.message);
+                    durationInput.reportValidity();
+                    return;
+                }
+
+                return;
             }
 
-            form.reset();
-            Array.from(form.elements).forEach(element => {
-                element.classList.remove('is-invalid');
+            // Reset form validity
+            const form = document.getElementById('gate-form');
+            form.querySelectorAll('input').forEach(input => {
+                input.setCustomValidity('');
             });
 
-            GateManager.renderAllGates();
-            UIManager.updateCalculations();
-            SimulationManager.runSimulations();
-        }
-
-        function cancelEdit() {
-            State.editingIndex = -1;
-            
-            const form = document.getElementById('gate-form');
-            const formTitle = document.getElementById('form-title');
-            const submitBtn = document.getElementById('submit-btn');
-            const cancelBtn = document.getElementById('cancel-btn');
-
-            if (form) form.reset();
-            if (formTitle) formTitle.textContent = 'Add New Gate';
-            if (submitBtn) {
-                submitBtn.textContent = 'Add Gate';
-                submitBtn.setAttribute('aria-label', 'Add new gate');
+            // Add or update the gate
+            if (this.editingGateId) {
+                console.log('Updating existing gate', gateData);
+                this.updateGate(gateData);
+                this.editingGateId = null;
+            } else {
+                console.log('Adding new gate', gateData);
+                this.addGate(gateData);
             }
-            if (cancelBtn) cancelBtn.classList.add(CONSTANTS.CLASS_NAMES.D_NONE);
+
+            // Reset form and update UI
+            form.reset();
+            document.getElementById('add-gate-btn').textContent = 'Add Gate';
+            document.getElementById('cancel-edit-btn').classList.add(CONSTANTS.CLASS_NAMES.D_NONE);
+
+            // Update summary
+            this.updateSummary();
+
+            console.log('Gate added/updated successfully');
         }
 
-        function runSimulations() {
-            SimulationManager.runSimulations();
+        /**
+         * Initialize drag and drop functionality
+         */
+        initDragAndDrop() {
+            const container = document.getElementById('gates-container');
+
+            container.addEventListener('dragover', (e) => {
+                e.preventDefault();
+                const draggable = document.querySelector(CONSTANTS.SELECTORS.DRAGGING);
+                const afterElement = this.getDragAfterElement(container, e.clientY);
+
+                if (afterElement == null) {
+                    container.appendChild(draggable);
+                } else {
+                    container.insertBefore(draggable, afterElement);
+                }
+
+                this.updateGatesOrder();
+            });
         }
 
-        // Drag and Drop Utilities
-        function getDragAfterElement(container, y) {
-            const draggableElements = [...container.querySelectorAll(
-                `${CONSTANTS.SELECTORS.GATE_CARD}:not(${CONSTANTS.SELECTORS.DRAGGING})`
-            )];
+        /**
+         * Get the element to insert the dragged element after
+         * @param {HTMLElement} container - The container element
+         * @param {number} y - The Y position of the mouse
+         * @returns {HTMLElement|null} The element to insert after, or null if at the end
+         */
+        getDragAfterElement(container, y) {
+            const draggableElements = [...container.querySelectorAll(`${CONSTANTS.SELECTORS.GATE_CARD}:not(${CONSTANTS.SELECTORS.DRAGGING})`)];
 
             return draggableElements.reduce((closest, child) => {
                 const box = child.getBoundingClientRect();
                 const offset = y - box.top - box.height / 2;
-                
+
                 if (offset < 0 && offset > closest.offset) {
-                    return { offset: offset, element: child };
+                    return { offset, element: child };
                 } else {
                     return closest;
                 }
             }, { offset: Number.NEGATIVE_INFINITY }).element;
         }
 
-        // Initialize Application
-        document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('gate-form');
-            if (form) {
-                form.addEventListener('submit', handleSubmit);
+        /**
+         * Update the order of gates based on DOM order
+         */
+        updateGatesOrder() {
+            const gateCards = document.querySelectorAll(CONSTANTS.SELECTORS.GATE_CARD);
+            const newOrder = [];
+
+            gateCards.forEach(card => {
+                const gateId = card.dataset.gateId;
+                const gate = this.gates.find(g => g.id === gateId);
+                if (gate) {
+                    newOrder.push(gate);
+                }
+            });
+
+            this.gates = newOrder;
+            this.updateSummary();
+        }
+
+        /**
+         * Validate gate name
+         * @param {string} name - The gate name to validate
+         * @returns {Object} Validation result object with valid flag and message
+         */
+        validateGateName(name) {
+            // Check if name is empty
+            if (!name || name.trim() === '') {
+                return { valid: false, message: 'Gate name cannot be empty.' };
             }
 
-            // Set up drag and drop
+            // Check if name is too long
+            if (name.length > CONSTANTS.VALIDATION.MAX_NAME_LENGTH) {
+                return {
+                    valid: false,
+                    message: `Gate name cannot exceed ${CONSTANTS.VALIDATION.MAX_NAME_LENGTH} characters.`
+                };
+            }
+
+            return { valid: true };
+        }
+
+        /**
+         * Validate gate pass rate
+         * @param {number} passRate - The pass rate to validate
+         * @returns {Object} Validation result object with valid flag and message
+         */
+        validatePassRate(passRate) {
+            if (isNaN(passRate)) {
+                return { valid: false, message: 'Pass rate must be a number.' };
+            }
+
+            if (passRate < CONSTANTS.VALIDATION.MIN_PASS_RATE || passRate > CONSTANTS.VALIDATION.MAX_PASS_RATE) {
+                return {
+                    valid: false,
+                    message: `Pass rate must be between ${CONSTANTS.VALIDATION.MIN_PASS_RATE}% and ${CONSTANTS.VALIDATION.MAX_PASS_RATE}%.`
+                };
+            }
+
+            return { valid: true };
+        }
+
+        /**
+         * Validate gate duration
+         * @param {number} duration - The duration to validate
+         * @returns {Object} Validation result object with valid flag and message
+         */
+        validateDuration(duration) {
+            if (isNaN(duration)) {
+                return { valid: false, message: 'Duration must be a number.' };
+            }
+
+            if (duration < CONSTANTS.VALIDATION.MIN_DURATION) {
+                return {
+                    valid: false,
+                    message: `Duration must be at least ${CONSTANTS.VALIDATION.MIN_DURATION} minute.`
+                };
+            }
+
+            if (!Number.isInteger(duration)) {
+                return { valid: false, message: 'Duration must be a whole number.' };
+            }
+
+            return { valid: true };
+        }
+
+        /**
+         * Add a new gate to the pipeline
+         * @param {Object} gate - The gate object to add
+         */
+        addGate(gate) {
+            this.gates.push(gate);
+            this.renderGates();
+        }
+
+        /**
+         * Update an existing gate
+         * @param {Object} updatedGate - The updated gate object
+         */
+        updateGate(updatedGate) {
+            const index = this.gates.findIndex(gate => gate.id === updatedGate.id);
+            if (index !== -1) {
+                this.gates[index] = updatedGate;
+                this.renderGates();
+            }
+        }
+
+        /**
+         * Remove a gate from the pipeline
+         * @param {string} gateId - The ID of the gate to remove
+         */
+        removeGate(gateId) {
+            this.gates = this.gates.filter(gate => gate.id !== gateId);
+            this.renderGates();
+            this.updateSummary();
+        }
+
+        /**
+         * Edit a gate
+         * @param {string} gateId - The ID of the gate to edit
+         */
+        editGate(gateId) {
+            const gate = this.gates.find(gate => gate.id === gateId);
+            if (gate) {
+                this.editingGateId = gateId;
+
+                // Populate form with gate data
+                document.getElementById('gate-name').value = gate.name;
+                document.getElementById('gate-pass-rate').value = gate.passRate;
+                document.getElementById('gate-duration').value = gate.duration;
+
+                // Update UI
+                document.getElementById('add-gate-btn').textContent = 'Update Gate';
+                document.getElementById('cancel-edit-btn').classList.remove(CONSTANTS.CLASS_NAMES.D_NONE);
+            }
+        }
+
+        /**
+         * Cancel editing a gate
+         */
+        cancelEdit() {
+            this.editingGateId = null;
+            document.getElementById('gate-form').reset();
+            document.getElementById('add-gate-btn').textContent = 'Add Gate';
+            document.getElementById('cancel-edit-btn').classList.add(CONSTANTS.CLASS_NAMES.D_NONE);
+        }
+
+        /**
+         * Render all gates in the container
+         */
+        renderGates() {
             const container = document.getElementById('gates-container');
-            if (container) {
-                container.addEventListener('dragover', (e) => {
-                    e.preventDefault();
-                    const afterElement = getDragAfterElement(container, e.clientY);
-                    const draggable = document.querySelector(CONSTANTS.SELECTORS.DRAGGING);
-                    
-                    if (draggable) {
-                        if (afterElement) {
-                            container.insertBefore(draggable, afterElement);
-                        } else {
-                            container.appendChild(draggable);
+            const noGatesMessage = document.getElementById('no-gates-message');
+
+            // Check if elements exist before manipulating them
+            if (!container) {
+                console.error('Gates container not found');
+                return;
+            }
+
+            if (!noGatesMessage) {
+                console.error('No gates message element not found');
+                // Create it if it doesn't exist
+                const message = document.createElement('p');
+                message.id = 'no-gates-message';
+                message.className = 'text-center text-muted';
+                message.textContent = 'No gates added yet. Add a gate to start building your pipeline.';
+                container.appendChild(message);
+                return;
+            }
+
+            if (this.gates.length === 0) {
+                container.innerHTML = '';
+                container.appendChild(noGatesMessage);
+                noGatesMessage.classList.remove(CONSTANTS.CLASS_NAMES.D_NONE);
+                return;
+            }
+
+            noGatesMessage.classList.add(CONSTANTS.CLASS_NAMES.D_NONE);
+            container.innerHTML = '';
+
+            this.gates.forEach(gate => {
+                const gateCard = document.createElement('div');
+                gateCard.className = 'card gate-card';
+                gateCard.draggable = true;
+                gateCard.dataset.gateId = gate.id;
+
+                gateCard.innerHTML = `
+                        <div class="card-body">
+                            <h3 class="card-title">
+                                <span>${Utils.escapeHtml(gate.name)}</span>
+                                <span class="actions">
+                                    <button type="button" class="btn btn-sm btn-outline-primary edit-gate-btn" aria-label="Edit gate">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-pencil" viewBox="0 0 16 16">
+                                            <path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/>
+                                        </svg>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-outline-danger remove-gate-btn" aria-label="Remove gate">
+                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-trash" viewBox="0 0 16 16">
+                                            <path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5zm3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0V6z"/>
+                                            <path fill-rule="evenodd" d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1v1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4H4.118zM2.5 3V2h11v1h-11z"/>
+                                        </svg>
+                                    </button>
+                                </span>
+                            </h3>
+                            <div class="row">
+                                <div class="col-6">
+                                    <p class="card-text mb-1">Pass Rate: ${Utils.formatPercent(gate.passRate)}</p>
+                                </div>
+                                <div class="col-6">
+                                    <p class="card-text mb-1">Duration: ${Utils.formatMinutes(gate.duration)}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                container.appendChild(gateCard);
+
+                // Add event listeners
+                gateCard.querySelector('.edit-gate-btn').addEventListener('click', () => this.editGate(gate.id));
+                gateCard.querySelector('.remove-gate-btn').addEventListener('click', () => this.removeGate(gate.id));
+
+                // Drag event listeners
+                gateCard.addEventListener('dragstart', () => {
+                    gateCard.classList.add(CONSTANTS.CLASS_NAMES.DRAGGING);
+                });
+
+                gateCard.addEventListener('dragend', () => {
+                    gateCard.classList.remove(CONSTANTS.CLASS_NAMES.DRAGGING);
+                });
+            });
+        }
+
+        /**
+         * Update the summary section
+         */
+        updateSummary() {
+            const overallPassRateEl = document.getElementById('overall-pass-rate');
+            const totalDurationEl = document.getElementById('total-duration');
+            const expectedExtraTimeEl = document.getElementById('expected-extra-time');
+
+            if (this.gates.length === 0) {
+                overallPassRateEl.textContent = Utils.formatPercent(100);
+                totalDurationEl.textContent = Utils.formatMinutes(0);
+                expectedExtraTimeEl.textContent = Utils.formatHours(0);
+                return;
+            }
+
+            // Calculate overall pass rate (product of all pass rates)
+            const overallPassRate = this.calculateOverallPassRate();
+            overallPassRateEl.textContent = Utils.formatPercent(overallPassRate);
+
+            // Calculate total duration
+            const totalDuration = this.calculateTotalDuration();
+            totalDurationEl.textContent = Utils.formatMinutes(totalDuration);
+
+            // Calculate expected extra time
+            const expectedExtraTime = this.calculateExpectedExtraTime(
+                CONSTANTS.SIMULATION.JOBS_PER_RUN,
+                overallPassRate,
+                totalDuration
+            );
+
+            expectedExtraTimeEl.textContent = Utils.formatHours(expectedExtraTime);
+
+            // Display simulation results if available
+            this.displaySimulationResults();
+        }
+
+        /**
+         * Calculate the overall pass rate (product of all pass rates)
+         * @returns {number} The overall pass rate (0-100)
+         */
+        calculateOverallPassRate() {
+            if (this.gates.length === 0) return 100;
+
+            return this.gates.reduce((rate, gate) => {
+                return rate * (gate.passRate / 100);
+            }, 1) * 100;
+        }
+
+        /**
+         * Calculate the total duration of all gates
+         * @returns {number} The total duration in minutes
+         */
+        calculateTotalDuration() {
+            if (this.gates.length === 0) return 0;
+
+            return this.gates.reduce((total, gate) => {
+                return total + gate.duration;
+            }, 0);
+        }
+
+        /**
+         * Calculate the expected extra time for a number of jobs
+         * @param {number} jobs - The number of jobs
+         * @param {number} passRate - The overall pass rate (0-100)
+         * @param {number} duration - The total duration in minutes
+         * @returns {number} The expected extra time in hours
+         */
+        calculateExpectedExtraTime(jobs, passRate, duration) {
+            if (this.gates.length === 0) return 0;
+            if (passRate === 100) return 0;
+
+            // Expected number of attempts per job = 1 / overall pass rate
+            const expectedAttempts = 1 / (passRate / 100);
+
+            // Extra attempts = Expected attempts - 1 (first attempt isn't "extra")
+            const extraAttempts = expectedAttempts - 1;
+
+            // Extra time = Extra attempts * duration * jobs
+            return Utils.minutesToHours(extraAttempts * duration * jobs);
+        }
+
+        /**
+         * Run a pipeline simulation
+         */
+        runSimulation() {
+            if (this.gates.length === 0) {
+                alert('Please add at least one gate to run a simulation.');
+                return;
+            }
+
+            this.simulationResults = [];
+
+            // Run multiple simulations
+            for (let i = 0; i < CONSTANTS.SIMULATION.RUNS; i++) {
+                const runResult = this.simulatePipelineRun(CONSTANTS.SIMULATION.JOBS_PER_RUN);
+                this.simulationResults.push(runResult);
+            }
+
+            // Display results
+            this.displaySimulationResults();
+
+            // Update simulated average extra time
+            const avgExtraTime = this.calculateAverageExtraTime();
+            document.getElementById('simulated-extra-time').textContent = Utils.formatHours(avgExtraTime);
+
+            // Show results container
+            document.getElementById('simulation-results-container').classList.remove(CONSTANTS.CLASS_NAMES.D_NONE);
+        }
+
+        /**
+         * Simulate a pipeline run for a number of jobs
+         * @param {number} jobs - The number of jobs to simulate
+         * @returns {Object} The simulation results
+         */
+        simulatePipelineRun(jobs) {
+            const attempts = Array(this.gates.length).fill(0);
+            let totalExtraMinutes = 0;
+
+            // Simulate each job
+            for (let job = 0; job < jobs; job++) {
+                let finished = false;
+
+                while (!finished) {
+                    finished = true;
+
+                    // Process each gate
+                    for (let gateIndex = 0; gateIndex < this.gates.length; gateIndex++) {
+                        const gate = this.gates[gateIndex];
+                        attempts[gateIndex]++;
+
+                        // Check if gate passes
+                        const passes = Utils.randomBool(gate.passRate / 100);
+
+                        if (!passes) {
+                            // Gate failed, add extra time and restart the pipeline
+                            finished = false;
+                            totalExtraMinutes += this.calculatePipelineDurationUpTo(gateIndex + 1);
+                            break;
                         }
                     }
+                }
+            }
+
+            // Calculate required attempts
+            const requiredAttempts = attempts.map((count, index) => {
+                return count - jobs;
+            });
+
+            return {
+                jobs,
+                attempts: requiredAttempts,
+                extraHours: Utils.minutesToHours(totalExtraMinutes)
+            };
+        }
+
+        /**
+         * Calculate the duration of the pipeline up to a specific gate index
+         * @param {number} upToIndex - The index to calculate up to (exclusive)
+         * @returns {number} The duration in minutes
+         */
+        calculatePipelineDurationUpTo(upToIndex) {
+            let duration = 0;
+
+            for (let i = 0; i < upToIndex; i++) {
+                duration += this.gates[i].duration;
+            }
+
+            return duration;
+        }
+
+        /**
+         * Calculate the average extra time from simulation results
+         * @returns {number} The average extra time in hours
+         */
+        calculateAverageExtraTime() {
+            if (this.simulationResults.length === 0) return 0;
+
+            const totalExtraHours = this.simulationResults.reduce((total, result) => {
+                return total + result.extraHours;
+            }, 0);
+
+            return totalExtraHours / this.simulationResults.length;
+        }
+
+        /**
+         * Display simulation results in the UI
+         */
+        displaySimulationResults() {
+            if (this.simulationResults.length === 0) return;
+
+            const resultsContainer = document.getElementById('simulation-results');
+            resultsContainer.innerHTML = '';
+
+            // Update attempts header
+            const attemptsHeader = document.getElementById('attempts-header-container');
+            attemptsHeader.innerHTML = '';
+
+            const attemptsHeaderEl = document.createElement('div');
+            attemptsHeaderEl.className = 'd-flex flex-column';
+            attemptsHeaderEl.innerHTML = '<span>Extra Attempts</span>';
+
+            const attemptsSubheaderEl = document.createElement('div');
+            attemptsSubheaderEl.className = 'd-flex gap-2';
+
+            this.gates.forEach(gate => {
+                const shortName = gate.name.substring(0, 3);
+                const span = document.createElement('span');
+                span.className = 'text-nowrap';
+                span.textContent = shortName;
+                span.title = gate.name;
+                attemptsSubheaderEl.appendChild(span);
+            });
+
+            attemptsHeaderEl.appendChild(attemptsSubheaderEl);
+            attemptsHeader.appendChild(attemptsHeaderEl);
+
+            // Add results rows
+            this.simulationResults.forEach((result, index) => {
+                const row = document.createElement('tr');
+
+                // Run number
+                const runCell = document.createElement('td');
+                runCell.textContent = index + 1;
+                row.appendChild(runCell);
+
+                // Jobs count
+                const jobsCell = document.createElement('td');
+                jobsCell.textContent = result.jobs;
+                row.appendChild(jobsCell);
+
+                // Extra attempts
+                const attemptsCell = document.createElement('td');
+                const attemptsContainer = document.createElement('div');
+                attemptsContainer.className = 'd-flex gap-2';
+
+                result.attempts.forEach(attemptCount => {
+                    const attemptSpan = document.createElement('span');
+                    attemptSpan.className = 'text-nowrap';
+                    attemptSpan.textContent = attemptCount;
+                    attemptsContainer.appendChild(attemptSpan);
                 });
 
-                container.addEventListener('drop', (e) => {
-                    e.preventDefault();
-                    const draggable = document.querySelector(CONSTANTS.SELECTORS.DRAGGING);
-                    if (draggable) {
-                        draggable.classList.remove(CONSTANTS.CLASS_NAMES.DRAGGING);
-                        
-                        // Update gates array to match new order
-                        const newGates = [];
-                        container.querySelectorAll(CONSTANTS.SELECTORS.GATE_CARD).forEach(card => {
-                            const index = parseInt(card.dataset.index);
-                            if (!isNaN(index) && State.gates[index]) {
-                                newGates.push(State.gates[index]);
-                            }
-                        });
-                        State.gates = newGates;
-                        
-                        // Refresh UI
-                        GateManager.renderAllGates();
-                        UIManager.updateCalculations();
-                        SimulationManager.runSimulations();
-                    }
+                attemptsCell.appendChild(attemptsContainer);
+                row.appendChild(attemptsCell);
+
+                // Extra hours
+                const extraHoursCell = document.createElement('td');
+                extraHoursCell.textContent = Utils.formatHours(result.extraHours);
+
+                if (result.extraHours > 0) {
+                    extraHoursCell.classList.add(CONSTANTS.CLASS_NAMES.EXTRA_HOURS_POSITIVE);
+                } else {
+                    extraHoursCell.classList.add(CONSTANTS.CLASS_NAMES.EXTRA_HOURS_ZERO);
+                }
+
+                row.appendChild(extraHoursCell);
+
+                resultsContainer.appendChild(row);
+            });
+
+            // Add averages row
+            const averagesRow = document.createElement('tr');
+            averagesRow.className = 'table-secondary fw-bold';
+
+            // Averages label
+            const labelCell = document.createElement('td');
+            labelCell.textContent = 'AVG';
+            labelCell.colSpan = 2;
+            averagesRow.appendChild(labelCell);
+
+            // Average attempts
+            const avgAttemptsCell = document.createElement('td');
+            const avgAttemptsContainer = document.createElement('div');
+            avgAttemptsContainer.className = 'd-flex gap-2';
+
+            // Calculate average attempts for each gate
+            const avgAttempts = Array(this.gates.length).fill(0);
+            this.simulationResults.forEach(result => {
+                result.attempts.forEach((count, index) => {
+                    avgAttempts[index] += count;
                 });
+            });
+
+            // Divide by number of runs
+            avgAttempts.forEach((total, index) => {
+                avgAttempts[index] = total / this.simulationResults.length;
+            });
+
+            // Display average attempts
+            avgAttempts.forEach(avgAttempt => {
+                const attemptSpan = document.createElement('span');
+                attemptSpan.className = 'text-nowrap';
+                attemptSpan.textContent = avgAttempt.toFixed(1);
+                avgAttemptsContainer.appendChild(attemptSpan);
+            });
+
+            avgAttemptsCell.appendChild(avgAttemptsContainer);
+            averagesRow.appendChild(avgAttemptsCell);
+
+            // Average extra hours
+            const avgExtraHours = this.calculateAverageExtraTime();
+            const avgExtraHoursCell = document.createElement('td');
+            avgExtraHoursCell.textContent = Utils.formatHours(avgExtraHours);
+
+            if (avgExtraHours > 0) {
+                avgExtraHoursCell.classList.add(CONSTANTS.CLASS_NAMES.EXTRA_HOURS_POSITIVE);
+            } else {
+                avgExtraHoursCell.classList.add(CONSTANTS.CLASS_NAMES.EXTRA_HOURS_ZERO);
             }
-        });
-    </script>
+
+            averagesRow.appendChild(avgExtraHoursCell);
+
+            resultsContainer.appendChild(averagesRow);
+        }
+    }
+
+    // Initialize the application when the DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('DOM fully loaded, initializing application');
+        window.pipelineCalculator = new PipelineCalculator();
+    });
+</script>
 </body>
 </html>
