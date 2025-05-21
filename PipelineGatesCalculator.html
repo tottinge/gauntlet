@@ -504,19 +504,43 @@
             runSingleSimulation(gates, numberOfJobs) {
                 const results = {
                     totalTime: 0,
-                    gateResults: gates.map(() => ({ attempts: 0, failures: 0 }))
+                    gateResults: gates.map(() => ({ attempts: 0, failures: 0, timeSpent: 0 }))
                 };
 
                 for (let job = 0; job < numberOfJobs; job++) {
-                    gates.forEach((gate, index) => {
-                        let attempts = 1;
-                        while (Math.random() * 100 > gate.passRate) {
-                            attempts++;
+                    let completed = false;
+                    
+                    while (!completed) {
+                        let pipelineSuccess = true;
+                        
+                        for (let i = 0; i < gates.length; i++) {
+                            const gate = gates[i];
+                            results.gateResults[i].attempts++;
+                            
+                            // Check if this gate passes
+                            if (Math.random() * 100 > gate.passRate) {
+                                // Gate failed
+                                results.gateResults[i].failures++;
+                                pipelineSuccess = false;
+                                
+                                // Add the time spent at this gate
+                                results.gateResults[i].timeSpent += gate.duration;
+                                results.totalTime += gate.duration;
+                                
+                                // Break the inner loop to restart the pipeline
+                                break;
+                            }
+                            
+                            // Gate passed, add the time
+                            results.gateResults[i].timeSpent += gate.duration;
+                            results.totalTime += gate.duration;
                         }
-                        results.totalTime += gate.duration * attempts;
-                        results.gateResults[index].attempts += attempts;
-                        results.gateResults[index].failures += attempts - 1;
-                    });
+                        
+                        // If we made it through all gates, the job is complete
+                        if (pipelineSuccess) {
+                            completed = true;
+                        }
+                    }
                 }
 
                 return results;
@@ -599,53 +623,53 @@
 
                 // Update headers
                 let headerHtml = `
-                    <th role="columnheader" scope="col">Run #</th>
-                    ${State.gates.map(gate => `
-                        <th role="columnheader" scope="col">${Utils.escapeHtml(gate.name)}</th>
-                    `).join('')}
-                    <th role="columnheader" scope="col" class="total-column">Total Hours</th>
-                `;
-                tableHead.innerHTML = headerHtml;
+            <th role="columnheader" scope="col">Run #</th>
+            ${State.gates.map(gate => `
+                <th role="columnheader" scope="col">${Utils.escapeHtml(gate.name)}</th>
+            `).join('')}
+            <th role="columnheader" scope="col" class="total-column">Total Hours</th>
+        `;
+        tableHead.innerHTML = headerHtml;
 
-                // Update body
-                tableBody.innerHTML = results.map(result => `
-                    <tr>
-                        <td>${result.run}</td>
-                        ${result.gateResults.map(gr => `
-                            <td>${Utils.formatNumber(gr.attempts / CONSTANTS.SIMULATION.JOBS_PER_RUN)}</td>
-                        `).join('')}
-                        <td class="total-column">
-                            ${Utils.formatNumber(result.totalHours)}
-                        </td>
-                    </tr>
-                `).join('') + `
-                    <tr class="average-row">
-                        <td class="average-label">Average</td>
-                        ${State.gates.map((_, i) => `
-                            <td>${Utils.formatNumber(
-                                results.reduce((sum, r) => 
-                                    sum + r.gateResults[i].attempts, 0) / 
-                                    (CONSTANTS.SIMULATION.RUNS * CONSTANTS.SIMULATION.JOBS_PER_RUN)
-                            )}</td>
-                        `).join('')}
-                        <td class="total-column">
-                            ${Utils.formatNumber(
-                                results.reduce((sum, r) => 
-                                    sum + r.totalHours, 0) / CONSTANTS.SIMULATION.RUNS
-                            )}
-                        </td>
-                    </tr>
-                `;
+        // Update body
+        tableBody.innerHTML = results.map(result => `
+            <tr>
+                <td>${result.run}</td>
+                ${result.gateResults.map(gr => `
+                    <td>${Utils.formatNumber(gr.timeSpent)}</td>
+                `).join('')}
+                <td class="total-column">
+                    ${Utils.formatNumber(result.totalHours)}
+                </td>
+            </tr>
+        `).join('') + `
+            <tr class="average-row">
+                <td class="average-label">Average</td>
+                ${State.gates.map((_, i) => `
+                    <td>${Utils.formatNumber(
+                        results.reduce((sum, r) => 
+                            sum + r.gateResults[i].timeSpent, 0) / 
+                            CONSTANTS.SIMULATION.RUNS
+                    )}</td>
+                `).join('')}
+                <td class="total-column">
+                    ${Utils.formatNumber(
+                        results.reduce((sum, r) => 
+                            sum + r.totalHours, 0) / CONSTANTS.SIMULATION.RUNS
+                    )}
+                </td>
+            </tr>
+        `;
 
-                // Update extra time display
-                const extraTimeElement = document.getElementById('simulated-extra-time');
-                if (extraTimeElement) {
-                    extraTimeElement.textContent = `${Utils.formatNumber(averageExtraHours)} hours`;
-                    extraTimeElement.className = averageExtraHours > 0 ? 
-                        CONSTANTS.CLASS_NAMES.EXTRA_HOURS_POSITIVE : 
-                        CONSTANTS.CLASS_NAMES.EXTRA_HOURS_ZERO;
-                }
-            }
+        // Update extra time display
+        const extraTimeElement = document.getElementById('simulated-extra-time');
+        if (extraTimeElement) {
+            extraTimeElement.textContent = `${Utils.formatNumber(averageExtraHours)} hours`;
+            extraTimeElement.className = averageExtraHours > 0 ? 
+                CONSTANTS.CLASS_NAMES.EXTRA_HOURS_POSITIVE : 
+                CONSTANTS.CLASS_NAMES.EXTRA_HOURS_ZERO;
+        }
+    }
         };
 
         // Event Handlers
