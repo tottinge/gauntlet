@@ -1,0 +1,60 @@
+Create a comprehensive single HTML file Pipeline Gates Calculator web application that visualizes and simulates pipeline execution times. The application must strictly adhere to our project standards for code quality and organization.
+
+CORE FUNCTIONALITY:
+- Allow users to add, edit, and remove pipeline gates (with name, pass rate percentage, and duration in minutes)
+- Implement drag-and-drop functionality for reordering gates
+- Calculate overall pass rate and total duration in real-time
+- Run simulations (10 simulations with 100 jobs each) to estimate actual execution times
+
+UI COMPONENTS REQUIRED:
+- Summary dashboard displaying:
+  * Overall pass rate
+  * Total duration
+  * Expected extra time for 100 jobs
+  * Simulated average extra time
+- Form for gate management with validated fields for:
+  * Gate name (allowing letters, numbers, spaces, hyphens, underscores)
+  * Pass rate (0-100%)
+  * Duration (positive integer in minutes)
+- Interactive display of existing gates as draggable cards
+- Detailed simulation results table showing:
+  * Individual run metrics
+  * Attempts per gate
+  * Total hours
+  * Statistical averages
+
+TECHNICAL SPECIFICATIONS:
+1. Structure:
+   - All code (HTML, CSS, JavaScript) must be in a single HTML file
+   - CSS in <style> section within the document head
+   - JavaScript in <script> section at the end of the body
+   - Use clearly commented sections to organize code
+
+2. Quality Requirements:
+   - Code must pass W3C HTML validation with zero errors
+   - JavaScript must adhere to ESLint standards
+   - CSS must follow stylelint validation rules
+   - Follow component-based organization within the file
+
+3. Framework & Libraries:
+   - Use Bootstrap 5.3.2 for responsive styling
+   - Include necessary ARIA attributes for accessibility
+   - Implement thorough client-side validation
+   - Sanitize all user inputs
+
+4. UX/UI Design:
+   - Create a clean, professional interface using cards and tables
+   - Provide visual feedback for drag-and-drop operations
+   - Use monospace font for numerical data in simulation results
+   - Implement color-coding for positive/negative time values
+   - Ensure responsive design for all device sizes
+   - Include print-friendly styles
+
+5. Performance & Security:
+   - Maintain centralized state management
+   - Implement proper error handling
+   - Escape HTML content when rendering dynamic data
+   - Use constants for configuration values
+   - Follow single responsibility principle
+
+Deliver a production-ready application that demonstrates best practices in web development while maintaining all functionality in a single, well-structured HTML file.
