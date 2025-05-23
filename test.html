@@ -1,0 +1,146 @@
+<script src="https://code.jquery.com/qunit/qunit-2.19.4.js"></script>
+<link rel="stylesheet" href="https://code.jquery.com/qunit/qunit-2.19.4.css">
+
+<div id="qunit"></div>
+<div id="qunit-fixture"></div>
+
+<script>
+// Unit Test Suite for Pipeline Calculator
+QUnit.module('Pipeline Calculator Core Functionality', function(hooks) {
+    // Setup before each test
+    hooks.beforeEach(function() {
+        // Reset global state or create a fresh instance of calculator
+        window.pipelineCalculator = {
+            gates: [],
+            addGate: function(name, passRate, duration) {
+                if (!name || passRate < 0 || passRate > 100 || duration <= 0) {
+                    throw new Error('Invalid gate parameters');
+                }
+                const gate = { 
+                    name, 
+                    passRate: parseFloat(passRate), 
+                    duration: parseInt(duration) 
+                };
+                this.gates.push(gate);
+                return gate;
+            },
+            removeGate: function(name) {
+                this.gates = this.gates.filter(gate => gate.name !== name);
+            },
+            calculateOverallPassRate: function() {
+                return this.gates.reduce((rate, gate) => rate * (gate.passRate / 100), 1) * 100;
+            },
+            calculateTotalDuration: function() {
+                return this.gates.reduce((total, gate) => total + gate.duration, 0);
+            },
+            runSimulation: function(jobCount = 100) {
+                if (this.gates.length === 0) {
+                    throw new Error('No gates defined for simulation');
+                }
+                // Basic simulation logic
+                const results = [];
+                for (let i = 0; i < 10; i++) {
+                    let completedJobs = jobCount;
+                    const runResults = this.gates.map(gate => {
+                        const passedJobs = Math.floor(completedJobs * (gate.passRate / 100));
+                        completedJobs = passedJobs;
+                        return {
+                            gateName: gate.name,
+                            attempts: completedJobs,
+                            duration: gate.duration
+                        };
+                    });
+                    results.push(runResults);
+                }
+                return results;
+            }
+        };
+    });
+
+    // Test Gate Addition
+    QUnit.test('Add Gate - Valid Parameters', function(assert) {
+        const gate = window.pipelineCalculator.addGate('Test Gate', 90, 30);
+        assert.equal(gate.name, 'Test Gate', 'Gate name is correct');
+        assert.equal(gate.passRate, 90, 'Pass rate is correct');
+        assert.equal(gate.duration, 30, 'Duration is correct');
+        assert.equal(window.pipelineCalculator.gates.length, 1, 'Gate added to list');
+    });
+
+    // Test Invalid Gate Addition
+    QUnit.test('Add Gate - Invalid Parameters', function(assert) {
+        assert.throws(
+            () => window.pipelineCalculator.addGate('', 90, 30),
+            /Invalid gate parameters/,
+            'Empty name should throw error'
+        );
+        assert.throws(
+            () => window.pipelineCalculator.addGate('Test Gate', 101, 30),
+            /Invalid gate parameters/,
+            'Pass rate > 100 should throw error'
+        );
+        assert.throws(
+            () => window.pipelineCalculator.addGate('Test Gate', 90, -10),
+            /Invalid gate parameters/,
+            'Negative duration should throw error'
+        );
+    });
+
+    // Test Gate Removal
+    QUnit.test('Remove Gate', function(assert) {
+        window.pipelineCalculator.addGate('Gate 1', 90, 30);
+        window.pipelineCalculator.addGate('Gate 2', 80, 20);
+        window.pipelineCalculator.removeGate('Gate 1');
+        assert.equal(window.pipelineCalculator.gates.length, 1, 'Gate removed correctly');
+        assert.equal(window.pipelineCalculator.gates[0].name, 'Gate 2', 'Correct gate remains');
+    });
+
+    // Test Overall Pass Rate Calculation
+    QUnit.test('Calculate Overall Pass Rate', function(assert) {
+        window.pipelineCalculator.addGate('Gate 1', 90, 30);
+        window.pipelineCalculator.addGate('Gate 2', 80, 20);
+        const overallPassRate = window.pipelineCalculator.calculateOverallPassRate();
+        assert.close(overallPassRate, 72, 0.1, 'Overall pass rate calculated correctly');
+    });
+
+    // Test Total Duration Calculation
+    QUnit.test('Calculate Total Duration', function(assert) {
+        window.pipelineCalculator.addGate('Gate 1', 90, 30);
+        window.pipelineCalculator.addGate('Gate 2', 80, 20);
+        const totalDuration = window.pipelineCalculator.calculateTotalDuration();
+        assert.equal(totalDuration, 50, 'Total duration calculated correctly');
+    });
+
+    // Test Simulation
+    QUnit.test('Run Simulation', function(assert) {
+        window.pipelineCalculator.addGate('Gate 1', 90, 30);
+        window.pipelineCalculator.addGate('Gate 2', 80, 20);
+        const simulationResults = window.pipelineCalculator.runSimulation();
+        
+        assert.equal(simulationResults.length, 10, 'Runs 10 simulations');
+        assert.ok(simulationResults[0].length > 0, 'Each simulation has results');
+        
+        simulationResults.forEach(run => {
+            run.forEach(gateResult => {
+                assert.ok(gateResult.gateName, 'Gate name exists');
+                assert.ok(gateResult.attempts >= 0, 'Attempts are non-negative');
+                assert.ok(gateResult.duration >= 0, 'Duration is non-negative');
+            });
+        });
+    });
+
+    // Test Error Handling for Simulation
+    QUnit.test('Simulation with No Gates', function(assert) {
+        assert.throws(
+            () => window.pipelineCalculator.runSimulation(),
+            /No gates defined for simulation/,
+            'Throws error when no gates are defined'
+        );
+    });
+});
+
+// Utility for approximate equality
+QUnit.assert.close = function(actual, expected, delta, message) {
+    const result = Math.abs(actual - expected) <= delta;
+    this.push(result, actual, expected, message);
+};
+</script>
