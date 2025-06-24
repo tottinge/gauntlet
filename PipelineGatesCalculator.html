@@ -221,8 +221,8 @@
                         <div class="col-md-6 mb-3">
                             <div class="card h-100">
                                 <div class="card-body">
-                                    <h3 class="card-title fs-6">Ideal Duration</h3>
-                                    <p class="card-text display-6" id="total-duration">0 min</p>
+                                    <h3 class="card-title fs-6">Ideal Duration per item</h3>
+                                    <p class="card-text display-6" id="total-duration">0 hrs</p>
                                 </div>
                             </div>
                         </div>
@@ -841,7 +841,7 @@
 
             // Calculate total duration
             const totalDuration = this.calculateTotalDuration();
-            totalDurationEl.textContent = Utils.formatMinutes(totalDuration);
+            totalDurationEl.textContent = Utils.formatHours(Utils.minutesToHours(totalDuration));
 
             // Calculate expected extra time
             const expectedExtraTime = this.calculateExpectedExtraTime(

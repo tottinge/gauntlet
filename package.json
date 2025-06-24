@@ -1,5 +1,31 @@
 {
   "devDependencies": {
-    "qunit": "^2.24.1"
-  }
+    "puppeteer": "^24.9.0",
+    "qunit": "^2.24.1",
+    "qunit-cli": "^0.2.0"
+  },
+  "name": "gauntlet",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "colors": "^1.4.0",
+    "commander": "^7.2.0",
+    "globalyzer": "^0.1.0",
+    "globrex": "^0.1.2",
+    "minimist": "^0.0.10",
+    "node-watch": "^0.7.3",
+    "object-assign": "^2.1.1",
+    "optimist": "^0.6.1",
+    "qunitjs": "^1.23.1",
+    "tiny-glob": "^0.2.9",
+    "wordwrap": "^0.0.3"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs"
 }
