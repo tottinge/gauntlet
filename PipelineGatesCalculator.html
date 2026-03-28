@@ -287,6 +287,13 @@
 </div>
 
 <script>
+    // Export classes and objects for testing
+    if (typeof exports !== 'undefined') {
+        exports.Utils = Utils;
+        exports.PipelineCalculator = PipelineCalculator;
+        exports.CONSTANTS = CONSTANTS;
+    }
+
     /**
      * Constants used throughout the application
      */
@@ -912,6 +919,7 @@
 
             this.simulationResults = [];
 
+
             // Run multiple simulations
             for (let i = 0; i < CONSTANTS.SIMULATION.RUNS; i++) {
                 const runResult = this.simulatePipelineRun(CONSTANTS.SIMULATION.JOBS_PER_RUN);
@@ -1140,10 +1148,12 @@
     }
 
     // Initialize the application when the DOM is fully loaded
-    document.addEventListener('DOMContentLoaded', () => {
-        Utils.log('DOM fully loaded, initializing application');
-        window.pipelineCalculator = new PipelineCalculator();
-    });
+    if (typeof document !== 'undefined') {
+        document.addEventListener('DOMContentLoaded', () => {
+            Utils.log('DOM fully loaded, initializing application');
+            window.pipelineCalculator = new PipelineCalculator();
+        });
+    }
 </script>
 </body>
 </html>
