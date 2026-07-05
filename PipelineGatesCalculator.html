@@ -897,12 +897,12 @@
         calculateExpectedExtraTime(jobs, passRate, duration) {
             if (this.gates.length === 0) return 0;
             if (passRate === 100) return 0;
+            // p = overall pass probability, r = rejection probability
+            const p = passRate / 100;
+            const r = 1 - p;
 
-            // Expected number of attempts per job = 1 / overall pass rate
-            const expectedAttempts = 1 / (passRate / 100);
-
-            // Extra attempts = Expected attempts - 1 (first attempt isn't "extra")
-            const extraAttempts = expectedAttempts - 1;
+            // Extra work multiplier = r / (1 - r) = r / p
+            const extraAttempts = r / (1 - r);
 
             // Extra time = Extra attempts * duration * jobs
             return Utils.minutesToHours(extraAttempts * duration * jobs);
