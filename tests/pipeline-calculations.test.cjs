@@ -78,3 +78,46 @@ test('calculateExpectedExtraTime accounts for cumulative failure waste across ga
 
     assert.ok(Math.abs(resultHours - expectedHours) < 1e-9);
 });
+
+test('simulatePipelineRun returns zero extra attempts/time when all gates pass', () => {
+    const {PipelineCalculator, Utils} = loadCalculatorExports();
+    const calc = new PipelineCalculator(false);
+    calc.gates = [{name: 'Gate A', passRate: 80, duration: 10}];
+
+    const originalRandomBool = Utils.randomBool;
+    Utils.randomBool = () => true;
+
+    try {
+        const result = calc.simulatePipelineRun(3);
+        assert.equal(result.jobs, 3);
+        assert.deepEqual(result.attempts, [0]);
+        assert.equal(result.extraHours, 0);
+    } finally {
+        Utils.randomBool = originalRandomBool;
+    }
+});
+
+test('simulatePipelineRun adds extra hours when a later gate fails and retries', () => {
+    const {PipelineCalculator, Utils} = loadCalculatorExports();
+    const calc = new PipelineCalculator(false);
+    calc.gates = [
+        {name: 'Gate A', passRate: 80, duration: 10},
+        {name: 'Gate B', passRate: 50, duration: 20}
+    ];
+
+    const scriptedOutcomes = [true, false, true, true];
+    let outcomeIndex = 0;
+
+    const originalRandomBool = Utils.randomBool;
+    Utils.randomBool = () => scriptedOutcomes[outcomeIndex++];
+
+    try {
+        const result = calc.simulatePipelineRun(1);
+        assert.equal(result.jobs, 1);
+        assert.deepEqual(result.attempts, [1, 1]);
+        assert.equal(result.extraHours, 0.5);
+        assert.equal(outcomeIndex, 4);
+    } finally {
+        Utils.randomBool = originalRandomBool;
+    }
+});
