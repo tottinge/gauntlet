@@ -105,6 +105,15 @@
             justify-content: space-around;
         }
 
+        .simulation-section-title {
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .histogram-label {
+            text-align: left !important;
+        }
+
         @media print {
             .no-print {
                 display: none !important;
@@ -264,23 +273,43 @@
     </div>
     <div class="card mb-4 d-none" id="simulation-results-container">
         <div class="card-header">
-            <h2 class="fs-5 mb-0">Simulation Results</h2>
+            <h2 class="fs-5 mb-0" id="simulation-results-title">Simulation Results</h2>
         </div>
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-sm simulation-results">
-                    <thead>
-                    <tr>
-                        <th scope="col">Run</th>
-                        <th scope="col">Jobs</th>
-                        <th scope="col" id="attempts-header-container"></th>
-                        <th scope="col">Extra Hours</th>
-                    </tr>
-                    </thead>
-                    <tbody id="simulation-results">
-                    <!-- Simulation results will be added here -->
-                    </tbody>
-                </table>
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <h3 class="fs-6 simulation-section-title">Extra Hours Statistics</h3>
+                    <div class="table-responsive">
+                        <table class="table table-sm simulation-results">
+                            <thead>
+                            <tr>
+                                <th scope="col" class="text-start">Metric</th>
+                                <th scope="col">Value</th>
+                            </tr>
+                            </thead>
+                            <tbody id="simulation-stats"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <h3 class="fs-6 simulation-section-title">Extra Hours Histogram</h3>
+                    <div class="table-responsive">
+                        <table class="table table-sm simulation-results">
+                            <thead>
+                            <tr>
+                                <th scope="col" class="histogram-label">Range (hours)</th>
+                                <th scope="col">Runs</th>
+                                <th scope="col">%</th>
+                            </tr>
+                            </thead>
+                            <tbody id="simulation-histogram"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3">
+                <h3 class="fs-6 simulation-section-title">Average Extra Attempts (per gate)</h3>
+                <div id="simulation-average-attempts"></div>
             </div>
         </div>
     </div>
@@ -293,8 +322,9 @@
      */
     const CONSTANTS = {
         SIMULATION: {
-            RUNS: 10,
-            JOBS_PER_RUN: 100,
+            RUNS: 1000,
+            JOBS_PER_RUN: 20,
+            MAX_ATTEMPTS_PER_JOB: 1000,
             DECIMAL_PLACES: 2
         },
         VALIDATION: {
@@ -946,12 +976,15 @@
         simulatePipelineRun(jobs) {
             const attempts = Array(this.gates.length).fill(0);
             let totalExtraMinutes = 0;
+            const maxAttemptsPerJob = CONSTANTS.SIMULATION.MAX_ATTEMPTS_PER_JOB;
 
             // Simulate each job
             for (let job = 0; job < jobs; job++) {
                 let finished = false;
+                let jobAttemptCount = 0;
 
-                while (!finished) {
+                while (!finished && jobAttemptCount < maxAttemptsPerJob) {
+                    jobAttemptCount += 1;
                     finished = true;
 
                     // Process each gate
@@ -969,6 +1002,13 @@
                             break;
                         }
                     }
+                }
+
+                if (!finished) {
+                    Utils.log('Warning: simulation max attempts reached for a job', {
+                        job: job + 1,
+                        maxAttemptsPerJob
+                    });
                 }
             }
 
@@ -1014,98 +1054,196 @@
         }
 
         /**
+         * Calculate simulation statistics for extra hours
+         * @returns {Object} Aggregate statistics for simulation extra hours
+         */
+        calculateSimulationStatistics() {
+            const extraHours = this.simulationResults.map(result => result.extraHours);
+            const runs = extraHours.length;
+
+            if (runs === 0) {
+                return {
+                    runs: 0,
+                    mean: 0,
+                    median: 0,
+                    stdDev: 0,
+                    min: 0,
+                    max: 0,
+                    p90: 0,
+                    p95: 0,
+                    pctZero: 0
+                };
+            }
+
+            const sorted = [...extraHours].sort((a, b) => a - b);
+            const sum = extraHours.reduce((total, value) => total + value, 0);
+            const mean = sum / runs;
+            const variance = extraHours.reduce((total, value) => {
+                return total + Math.pow(value - mean, 2);
+            }, 0) / runs;
+
+            const percentile = (fraction) => {
+                if (runs === 1) return sorted[0];
+                const index = (runs - 1) * fraction;
+                const lower = Math.floor(index);
+                const upper = Math.ceil(index);
+                const weight = index - lower;
+                return sorted[lower] + (sorted[upper] - sorted[lower]) * weight;
+            };
+
+            const zeroRuns = extraHours.filter(value => Math.abs(value) < Number.EPSILON).length;
+
+            return {
+                runs,
+                mean,
+                median: percentile(0.5),
+                stdDev: Math.sqrt(variance),
+                min: sorted[0],
+                max: sorted[runs - 1],
+                p90: percentile(0.9),
+                p95: percentile(0.95),
+                pctZero: (zeroRuns / runs) * 100
+            };
+        }
+
+        /**
+         * Bucket simulation results into extra-hours ranges
+         * @returns {Array<Object>} Histogram buckets with counts and percentages
+         */
+        calculateExtraHoursHistogram() {
+            const runs = this.simulationResults.length;
+            if (runs === 0) return [];
+
+            const jobsPerRun = this.simulationResults[0].jobs;
+            const bucketDefinitions = jobsPerRun <= 25
+                ? [
+                    {label: '0', match: value => Math.abs(value) < Number.EPSILON},
+                    {label: '0 - 0.5', match: value => value > 0 && value <= 0.5},
+                    {label: '0.5 - 1', match: value => value > 0.5 && value <= 1},
+                    {label: '1 - 2', match: value => value > 1 && value <= 2},
+                    {label: '2 - 5', match: value => value > 2 && value <= 5},
+                    {label: '> 5', match: value => value > 5}
+                ]
+                : [
+                    {label: '0', match: value => Math.abs(value) < Number.EPSILON},
+                    {label: '0 - 2', match: value => value > 0 && value <= 2},
+                    {label: '2 - 5', match: value => value > 2 && value <= 5},
+                    {label: '5 - 10', match: value => value > 5 && value <= 10},
+                    {label: '> 10', match: value => value > 10}
+                ];
+
+            const histogram = bucketDefinitions.map(bucket => ({
+                label: bucket.label,
+                count: 0,
+                percentage: 0
+            }));
+
+            this.simulationResults.forEach(result => {
+                const value = result.extraHours;
+                const bucketIndex = bucketDefinitions.findIndex(bucket => bucket.match(value));
+                if (bucketIndex >= 0) {
+                    histogram[bucketIndex].count += 1;
+                }
+            });
+
+            histogram.forEach(bucket => {
+                bucket.percentage = (bucket.count / runs) * 100;
+            });
+
+            return histogram;
+        }
+
+        /**
+         * Format simulation title with run and ticket counts
+         * @param {number} runs - The number of simulation runs
+         * @param {number} jobsPerRun - The number of jobs/tickets per run
+         * @returns {string} Title text for simulation results section
+         */
+        formatSimulationResultsTitle(runs, jobsPerRun) {
+            const runLabel = runs === 1 ? 'run' : 'runs';
+            const ticketLabel = jobsPerRun === 1 ? 'ticket' : 'tickets';
+            return `Simulation Results (${runs} ${runLabel} × ${jobsPerRun} ${ticketLabel})`;
+        }
+
+        /**
          * Display simulation results in the UI
          */
         displaySimulationResults() {
             if (this.simulationResults.length === 0) return;
+            const statsContainer = document.getElementById('simulation-stats');
+            const histogramContainer = document.getElementById('simulation-histogram');
+            const avgAttemptsSection = document.getElementById('simulation-average-attempts');
+            const simulationResultsTitle = document.getElementById('simulation-results-title');
 
-            const resultsContainer = document.getElementById('simulation-results');
-            resultsContainer.innerHTML = '';
+            if (simulationResultsTitle) {
+                simulationResultsTitle.textContent = this.formatSimulationResultsTitle(
+                    this.simulationResults.length,
+                    this.simulationResults[0].jobs
+                );
+            }
 
-            // Update attempts header
-            const attemptsHeader = document.getElementById('attempts-header-container');
-            attemptsHeader.innerHTML = '';
+            statsContainer.innerHTML = '';
+            histogramContainer.innerHTML = '';
+            avgAttemptsSection.innerHTML = '';
 
-            // Create header with "Extra Attempts" label
-            const attemptsHeaderEl = document.createElement('div');
-            attemptsHeaderEl.className = 'd-flex flex-column';
-            attemptsHeaderEl.innerHTML = '<span>Extra Attempts</span>';
+            const statistics = this.calculateSimulationStatistics();
+            const histogram = this.calculateExtraHoursHistogram();
 
-            // Create the gates headers container
-            const gatesHeadersContainer = document.createElement('div');
-            gatesHeadersContainer.className = CONSTANTS.CLASS_NAMES.GATES_HEADERS;
+            const statsRows = [
+                ['Mean', Utils.formatHours(statistics.mean)],
+                ['Median', Utils.formatHours(statistics.median)],
+                ['Std Dev', Utils.formatHours(statistics.stdDev)],
+                ['Min', Utils.formatHours(statistics.min)],
+                ['Max', Utils.formatHours(statistics.max)],
+                ['P90', Utils.formatHours(statistics.p90)],
+                ['P95', Utils.formatHours(statistics.p95)],
+                ['% Zero Extra Time', Utils.formatPercent(statistics.pctZero)]
+            ];
 
-            // Add each gate name as a header
+            statsRows.forEach(([metric, value]) => {
+                const row = document.createElement('tr');
+                const metricCell = document.createElement('td');
+                metricCell.className = 'text-start';
+                metricCell.textContent = metric;
+                row.appendChild(metricCell);
+
+                const valueCell = document.createElement('td');
+                valueCell.textContent = value;
+                row.appendChild(valueCell);
+
+                statsContainer.appendChild(row);
+            });
+
+            histogram.forEach(bucket => {
+                const row = document.createElement('tr');
+                const rangeCell = document.createElement('td');
+                rangeCell.className = 'histogram-label';
+                rangeCell.textContent = bucket.label;
+                row.appendChild(rangeCell);
+
+                const countCell = document.createElement('td');
+                countCell.textContent = bucket.count;
+                row.appendChild(countCell);
+
+                const percentageCell = document.createElement('td');
+                percentageCell.textContent = Utils.formatPercent(bucket.percentage);
+                row.appendChild(percentageCell);
+
+                histogramContainer.appendChild(row);
+            });
+
+            const avgAttemptsHeader = document.createElement('div');
+            avgAttemptsHeader.className = CONSTANTS.CLASS_NAMES.GATES_HEADERS;
             this.gates.forEach(gate => {
-                // Use the full gate name instead of abbreviating
                 const headerSpan = document.createElement('div');
                 headerSpan.className = CONSTANTS.CLASS_NAMES.GATE_HEADER;
                 headerSpan.textContent = gate.name;
                 headerSpan.title = gate.name;
-                gatesHeadersContainer.appendChild(headerSpan);
+                avgAttemptsHeader.appendChild(headerSpan);
             });
 
-            attemptsHeaderEl.appendChild(gatesHeadersContainer);
-            attemptsHeader.appendChild(attemptsHeaderEl);
-
-            // Add results rows
-            this.simulationResults.forEach((result, index) => {
-                const row = document.createElement('tr');
-
-                // Run number
-                const runCell = document.createElement('td');
-                runCell.textContent = index + 1;
-                row.appendChild(runCell);
-
-                // Jobs count
-                const jobsCell = document.createElement('td');
-                jobsCell.textContent = result.jobs;
-                row.appendChild(jobsCell);
-
-                // Extra attempts
-                const attemptsCell = document.createElement('td');
-                const attemptsContainer = document.createElement('div');
-                attemptsContainer.className = CONSTANTS.CLASS_NAMES.GATES_VALUES;
-
-                result.attempts.forEach(attemptCount => {
-                    const attemptSpan = document.createElement('div');
-                    attemptSpan.className = CONSTANTS.CLASS_NAMES.GATE_VALUE;
-                    attemptSpan.textContent = attemptCount;
-                    attemptsContainer.appendChild(attemptSpan);
-                });
-
-                attemptsCell.appendChild(attemptsContainer);
-                row.appendChild(attemptsCell);
-
-                // Extra hours
-                const extraHoursCell = document.createElement('td');
-                extraHoursCell.textContent = Utils.formatHours(result.extraHours);
-
-                if (result.extraHours > 0) {
-                    extraHoursCell.classList.add(CONSTANTS.CLASS_NAMES.EXTRA_HOURS_POSITIVE);
-                } else {
-                    extraHoursCell.classList.add(CONSTANTS.CLASS_NAMES.EXTRA_HOURS_ZERO);
-                }
-
-                row.appendChild(extraHoursCell);
-
-                resultsContainer.appendChild(row);
-            });
-
-            // Add averages row
-            const averagesRow = document.createElement('tr');
-            averagesRow.className = 'table-secondary fw-bold';
-
-            // Averages label
-            const labelCell = document.createElement('td');
-            labelCell.textContent = 'AVG';
-            labelCell.colSpan = 2;
-            averagesRow.appendChild(labelCell);
-
-            // Average attempts
-            const avgAttemptsCell = document.createElement('td');
-            const avgAttemptsContainer = document.createElement('div');
-            avgAttemptsContainer.className = CONSTANTS.CLASS_NAMES.GATES_VALUES;
+            const avgAttemptsValues = document.createElement('div');
+            avgAttemptsValues.className = CONSTANTS.CLASS_NAMES.GATES_VALUES;
 
             // Calculate average attempts for each gate
             const avgAttempts = Array(this.gates.length).fill(0);
@@ -1125,26 +1263,10 @@
                 const attemptSpan = document.createElement('div');
                 attemptSpan.className = CONSTANTS.CLASS_NAMES.GATE_VALUE;
                 attemptSpan.textContent = avgAttempt.toFixed(1);
-                avgAttemptsContainer.appendChild(attemptSpan);
+                avgAttemptsValues.appendChild(attemptSpan);
             });
-
-            avgAttemptsCell.appendChild(avgAttemptsContainer);
-            averagesRow.appendChild(avgAttemptsCell);
-
-            // Average extra hours
-            const avgExtraHours = this.calculateAverageExtraTime();
-            const avgExtraHoursCell = document.createElement('td');
-            avgExtraHoursCell.textContent = Utils.formatHours(avgExtraHours);
-
-            if (avgExtraHours > 0) {
-                avgExtraHoursCell.classList.add(CONSTANTS.CLASS_NAMES.EXTRA_HOURS_POSITIVE);
-            } else {
-                avgExtraHoursCell.classList.add(CONSTANTS.CLASS_NAMES.EXTRA_HOURS_ZERO);
-            }
-
-            averagesRow.appendChild(avgExtraHoursCell);
-
-            resultsContainer.appendChild(averagesRow);
+            avgAttemptsSection.appendChild(avgAttemptsHeader);
+            avgAttemptsSection.appendChild(avgAttemptsValues);
         }
     }
 
