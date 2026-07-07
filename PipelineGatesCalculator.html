@@ -408,7 +408,7 @@
         /**
          * Initialize the application
          */
-        constructor() {
+        constructor(autoInit = typeof document !== 'undefined') {
             this.gates = [];
             this.editingGateId = null;
             this.simulationResults = [];
@@ -416,7 +416,9 @@
             Utils.log('Initializing Pipeline Calculator');
 
             // Initialize event listeners
-            this.initEventListeners();
+            if (autoInit) {
+                this.initEventListeners();
+            }
         }
 
         /**

@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "$0")" && pwd)"
+SMOKE_TEST="$ROOT_DIR/tests/pipeline-smoke.test.cjs"
+
+if [[ ! -f "$SMOKE_TEST" ]]; then
+    echo "Missing smoke test: $SMOKE_TEST"
+    exit 1
+fi
+
+echo "==> Running smoke test first"
+node --test "$SMOKE_TEST"
+
+echo "==> Discovering additional Node tests"
+ADDITIONAL_TESTS="$(find "$ROOT_DIR" -type f \( -name "*.test.cjs" -o -name "*.test.js" -o -name "*.test.mjs" \) ! -path "$SMOKE_TEST" ! -path "*/node_modules/*" | sort)"
+
+if [[ -n "$ADDITIONAL_TESTS" ]]; then
+    echo "==> Running additional tests"
+    # shellcheck disable=SC2086
+    node --test $ADDITIONAL_TESTS
+else
+    echo "No additional tests found."
+fi
+
+echo "All tests passed."
